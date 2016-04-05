@@ -1,0 +1,13 @@
+<launch>
+	<param name="robot_description" textfile="$(find labrob_description)/urdf/labrob.urdf.xacro" />
+	
+	<param name="use_gui" value="true"/>
+	<node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />
+	
+	<node name="rviz" pkg="rviz" type="rviz" required="true" />
+	
+	<node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher">
+		<param name="publisher_frequency" value="50"/>
+	</node>
+	
+</launch>

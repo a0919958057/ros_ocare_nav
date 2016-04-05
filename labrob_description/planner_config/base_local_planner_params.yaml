@@ -1,0 +1,27 @@
+TrajectoryPlannerROS:
+#TRAJECTORY CONTROL
+ holonomic_robot: false
+ max_acceleration: 0.2
+# velocity limits
+ max_vel_lin: 0.2
+ max_vel_th: 0.5
+ min_vel_lin: 0.01
+ min_vel_th: 0.0
+ min_in_place_vel_th: 0.0
+ in_place_trans_vel: 0.0
+# goal tolerance
+ xy_goal_tolerance: 0.2
+ yaw_goal_tolerance: 3.1415
+# angular velocity PID
+ k_prop_: 0.7
+
+ sim_time: 2.0
+ sim_granularity: 0.025
+ meter_scoring: true
+ angular_sim_granularity: 0.8
+ controller_frequency: 5.0
+ pdist_scale: 0.9
+ gdist_scale: 0.6
+ occdist_scale: 0.025
+ vx_samples: 5
+ dwa: true
