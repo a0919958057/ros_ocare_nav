@@ -20,7 +20,7 @@
   <param name="robot_description" command="$(find xacro)/xacro $(find labrob_description)/urdf/ocare_temp_v2.urdf.xacro" />
   
   <!-- Load joint controller configurations from YAML file to parameter server -->
-  <rosparam file="$(find ocare_control)/config/ocare_control.yaml" command="load"/>
+  <rosparam file="$(find labrob_description)/control/ocare_control.yaml" command="load"/>
  
   <!-- push robot_description to factory and spawn robot in gazebo -->
   <node name="ocare_spawn" pkg="gazebo_ros" type="spawn_model" output="screen" 
