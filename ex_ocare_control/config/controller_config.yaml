@@ -1,0 +1,13 @@
+ocare:
+  # Publish all joint states -----------------------------------
+  joint_state_controller:
+    type: joint_state_controller/JointStateController
+    publish_rate: 50  
+
+  # Position Controllers ---------------------------------------
+  pose_fuzzy_controller:
+    type ocare_controllers/FuzzyController
+	joints: 
+      - left_arm_base_link_joint
+      - left_arm_1_link_joint
+      - left_arm_2_link_joint

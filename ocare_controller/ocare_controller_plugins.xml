@@ -1,0 +1,11 @@
+<library="lib/libocare_controllers">
+  
+  <class name="ocare_controllers/FuzzyController"
+    type="ocare_controllers::FuzzyController"
+    base_class_type="controller_interface::ControllerBase">
+    <description>
+      The fuzzy Controller expects an EffortJointInterface type of hardware interface.
+    </description>
+  </class>
+
+</library>
