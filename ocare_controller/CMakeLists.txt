@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(ocare_controller)
+project(ocare_controllers)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -104,7 +104,7 @@ find_package(cmake_modules REQUIRED)
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
- LIBRARIES ocare_controller
+ LIBRARIES ${PROJECT_NAME}
  CATKIN_DEPENDS control_msgs controller_interface trajectory_msgs urdf
 #  DEPENDS system_lib
 )
@@ -122,7 +122,7 @@ include_directories(
 )
 
 ## Declare a C++ library
-add_library(ocare_controller
+add_library(ocare_controllers
   src/fuzzycontroller.cpp
 )
 

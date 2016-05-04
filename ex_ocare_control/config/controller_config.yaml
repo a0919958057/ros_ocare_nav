@@ -6,8 +6,8 @@ ocare:
 
   # Position Controllers ---------------------------------------
   pose_fuzzy_controller:
-    type ocare_controllers/FuzzyController
-	joints: 
+    type: ocare_controllers/FuzzyController
+    joints:
       - left_arm_base_link_joint
       - left_arm_1_link_joint
       - left_arm_2_link_joint

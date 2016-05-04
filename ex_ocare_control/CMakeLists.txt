@@ -4,11 +4,15 @@ project(ex_ocare_control)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+
 find_package(catkin REQUIRED COMPONENTS
   control_msgs
   controller_interface
   controller_manager
   geometry_msgs
+  urdf
   joy
   sensor_msgs
   std_msgs

@@ -1,4 +1,4 @@
-<library="lib/libocare_controllers">
+<library path="lib/libocare_controllers">
   
   <class name="ocare_controllers/FuzzyController"
     type="ocare_controllers::FuzzyController"

@@ -12,18 +12,21 @@ public:
     //      Joint State interface, Joint Position interface
     OcareRobot();
 
+    ros::Time getTime() const { return ros::Time::now(); }
+    ros::Duration getPeriod() const { return ros::Duration(0.01); }
+
     // Update Robot state using Packet by Serial interface
-    void update_state_from_robot();
+    void read(ros::Time time, ros::Duration period);
 
     // Write Robot state using Packet by Serial interface
-    void write_cmd_to_robot();
+    void write(ros::Time time, ros::Duration period);
 
 
 
 
 private:
     hardware_interface::JointStateInterface m_joint_state_interface;
-    hardware_interface::PositionJointInterface m_joint_position_interfece;
+    hardware_interface::EffortJointInterface m_joint_position_interfece;
     double cmd[3];
     double pos[3];
     double vel[3];

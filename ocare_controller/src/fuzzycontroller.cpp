@@ -1,4 +1,7 @@
+#include <sys/mman.h>
 #include "fuzzycontroller.h"
+
+#include <pluginlib/class_list_macros.h>
 
 ocare_controllers::FuzzyController::FuzzyController() {
 }
@@ -41,6 +44,7 @@ bool ocare_controllers::FuzzyController::init(
             return false;
         }
 
+        ROS_INFO("Find \"%s\" joint !", ((std::string)name_value).data() );
         hardware_interface::JointHandle j=m_robot->
                 getHandle((std::string)name_value);
         m_joints.push_back(j);
@@ -59,9 +63,20 @@ bool ocare_controllers::FuzzyController::init(
 }
 
 void ocare_controllers::FuzzyController::starting(const ros::Time &time) {
-
+    struct sched_param param;
+    param.sched_priority=sched_get_priority_max(SCHED_FIFO);
+    if(sched_setscheduler(0,SCHED_FIFO,&param) == -1)
+    {
+            ROS_WARN("Failed to set real-time scheduler.");
+            return;
+    }
+    if(mlockall(MCL_CURRENT|MCL_FUTURE) == -1)
+            ROS_WARN("Failed to lock memory.");
 }
 
 void ocare_controllers::FuzzyController::update(const ros::Time &time, const ros::Duration &duration) {
-
+   return;
 }
+
+PLUGINLIB_EXPORT_CLASS(ocare_controllers::FuzzyController,
+        controller_interface::ControllerBase)
