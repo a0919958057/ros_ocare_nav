@@ -140,7 +140,9 @@ include_directories(
 ## Declare a C++ executable
 add_executable(ex_ocare_control_node
                                 src/ocare_hw_node.cpp
-                                src/robot_main.cpp)
+                                src/robot_main.cpp
+                                src/arduserial.cpp
+                                src/robotarm.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above

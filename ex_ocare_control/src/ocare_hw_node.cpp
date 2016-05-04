@@ -1,6 +1,7 @@
 #include <ocare_hw_node.h>
 
-OcareRobot::OcareRobot() {
+OcareRobot::OcareRobot() : m_arm()
+    {
 
     ROS_INFO("Create JointStateHandle...");
 
@@ -49,7 +50,12 @@ void OcareRobot::read(ros::Time time, ros::Duration period) {
 }
 
 void OcareRobot::write(ros::Time time, ros::Duration period) {
-    cmd[0] = 0;
-    cmd[1] = 0;
-    cmd[2] = 0;
+
+    // TODO: add Robot Arm command list
+    //byte aBuffer[8] = {0};
+
+    //aBuffer[0];
+
+   // m_serial.writeBytes();
+
 }

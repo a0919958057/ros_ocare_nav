@@ -5,6 +5,9 @@
 #include <hardware_interface/joint_state_interface.h>
 #include <hardware_interface/robot_hw.h>
 
+// include the robot arm library
+#include "robotarm.h"
+
 class OcareRobot : public hardware_interface::RobotHW
 {
 public:
@@ -31,6 +34,9 @@ private:
     double pos[3];
     double vel[3];
     double eff[3];
+
+    RobotArm m_arm;
+
 };
 
 #endif // OCARE_HW_NODE_H
