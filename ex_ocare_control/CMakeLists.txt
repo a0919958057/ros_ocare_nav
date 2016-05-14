@@ -18,6 +18,19 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
 )
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/")
+
+
+
+# set the path to the library folder
+find_package(modbus REQUIRED)
+if( NOT MODBUS_FOUND)
+    message(FATAL_ERROR "Package modbus not found! ")
+endif( NOT MODBUS_FOUND)
+
+INCLUDE_DIRECTORIES(${MODBUS_INCLUDE_DIRS})
+set(LIBS ${LIBS} ${MODBUS_LIBRARIES})
+
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
@@ -142,7 +155,11 @@ add_executable(ex_ocare_control_node
                                 src/ocare_hw_node.cpp
                                 src/robot_main.cpp
                                 src/arduserial.cpp
-                                src/robotarm.cpp)
+                                src/robotarm.cpp
+                                src/ardumodbus.cpp
+                                src/armmodbus.cpp
+                                src/diffmodbus.cpp
+                                src/hwmodule.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
@@ -151,6 +168,7 @@ add_dependencies(ex_ocare_control_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${cat
 ## Specify libraries to link a library or executable target against
  target_link_libraries(ex_ocare_control_node
    ${catkin_LIBRARIES}
+   ${LIBS}
  )
 
 #############

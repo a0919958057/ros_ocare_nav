@@ -10,6 +10,7 @@ int main(int argc, char** argv) {
 
     ROS_INFO("Successful robot_main_node");
     OcareRobot robot;
+    robot.init(ros::NodeHandlePtr(&node));
     controller_manager::ControllerManager cm(&robot, node);
     ROS_INFO("Successful create ControllerManager");
 

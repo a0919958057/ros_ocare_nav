@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 find_package(cmake_modules REQUIRED)
 
+
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
@@ -106,7 +107,7 @@ find_package(cmake_modules REQUIRED)
 catkin_package(
 #  INCLUDE_DIRS include
  LIBRARIES ${PROJECT_NAME}
- CATKIN_DEPENDS control_msgs controller_interface trajectory_msgs urdf
+ CATKIN_DEPENDS control_msgs controller_interface trajectory_msgs  urdf
 #  DEPENDS system_lib
 )
 
