@@ -17,19 +17,6 @@ int main(int argc, char** argv) {
     spinner.start();
     ROS_INFO("Create spinner");
 
-    /*
-    hardware_interface::HardwareResourceManager
-            <hardware_interface::JointStateHandle, hardware_interface::ClaimResources> rm;
-
-    hardware_interface::JointStateHandle joint_handle = rm.getHandle("left_joint");
-
-    std::vector<std::string> joints = rm.getNames();
-    ROS_INFO("There is a %d joints available !", joints.size());
-    for(std::string joint_name : joints) {
-        ROS_INFO("%s",joint_name.data());
-    }
-        */
-
 
      ros::Rate r(1.0 / robot.getPeriod().toSec());
 
@@ -38,8 +25,9 @@ int main(int argc, char** argv) {
 
         ros::Time now = robot.getTime();
         ros::Duration dt = robot.getPeriod();
-
+        //ROS_INFO("Duration : %d",dt.sec);
         robot.read(now, dt);
+
         cm.update(now, dt);
 
         robot.write(now, dt);

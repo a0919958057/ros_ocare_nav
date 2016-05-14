@@ -260,10 +260,10 @@
   <transmission name="left_arm_base_link_tran">
 	<type>transmission_interface/SimpleTransmission</type>
 	<joint name="left_arm_base_link_joint" >
-		<hardwareInterface>EffortJointInterface</hardwareInterface>
+		<hardwareInterface>PositionJointInterface</hardwareInterface>
 	</joint>
 	<actuator name="left_arm_base_link_joint_actu">
-		<hardwareInterface>EffortJointInterface</hardwareInterface>
+		<hardwareInterface>PositionJointInterface</hardwareInterface>
 		<mechanicalReduction>1</mechanicalReduction>
 	</actuator>
   </transmission>
@@ -321,10 +321,10 @@
   <transmission name="left_arm_1_link_tran">
   	<type>transmission_interface/SimpleTransmission</type>
 	<joint name="left_arm_1_link_joint" >
-		<hardwareInterface>EffortJointInterface</hardwareInterface>
+		<hardwareInterface>PositionJointInterface</hardwareInterface>
 	</joint>
 	<actuator name="left_arm_1_link_joint_actu">
-		<hardwareInterface>EffortJointInterface</hardwareInterface>
+		<hardwareInterface>PositionJointInterface</hardwareInterface>
 		<mechanicalReduction>1</mechanicalReduction>
 	</actuator>
   </transmission>
@@ -382,10 +382,10 @@
   <transmission name="left_arm_2_link_tran">
   	<type>transmission_interface/SimpleTransmission</type>
 	<joint name="left_arm_2_link_joint" >
-		<hardwareInterface>EffortJointInterface</hardwareInterface>
+		<hardwareInterface>PositionJointInterface</hardwareInterface>
 	</joint>
 	<actuator name="left_arm_2_link_joint_actu">
-		<hardwareInterface>EffortJointInterface</hardwareInterface>
+		<hardwareInterface>PositionJointInterface</hardwareInterface>
 		<mechanicalReduction>1</mechanicalReduction>
 	</actuator>
   </transmission>

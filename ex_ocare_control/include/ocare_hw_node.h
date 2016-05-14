@@ -29,11 +29,18 @@ public:
 
 private:
     hardware_interface::JointStateInterface m_joint_state_interface;
-    hardware_interface::EffortJointInterface m_joint_position_interfece;
+    hardware_interface::PositionJointInterface m_joint_position_interfece;
+    hardware_interface::EffortJointInterface m_joint_effort_interfece;
+
     double cmd[3];
     double pos[3];
     double vel[3];
     double eff[3];
+
+    double wheel_cmd[2];
+    double wheel_pos[2];
+    double wheel_vel[2];
+    double wheel_eff[2];
 
     RobotArm m_arm;
 

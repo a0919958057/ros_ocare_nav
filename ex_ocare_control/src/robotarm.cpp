@@ -4,7 +4,7 @@ RobotArm::RobotArm() :
     m_serial(), m_joint1_rad(0), m_joint2_rad(0), m_catch(false) {
 
     ROS_INFO("Setup Serial");
-    m_serial.init("/dev/arduino/", 9600, ArduSerial::RAW);
+    m_serial.init("/dev/arduino", 9600, ArduSerial::RAW);
     m_serial.set_Parity(8,1,'N');
 
 }
