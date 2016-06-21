@@ -7,8 +7,13 @@
 #include<controller_interface/controller.h>
 #include<hardware_interface/joint_command_interface.h>
 #include<trajectory_msgs/JointTrajectoryPoint.h>
+#include<geometry_msgs/Twist.h>
 #include<sensor_msgs/JointState.h>
 #include<sensor_msgs/Imu.h>
+
+#include<math.h>
+
+#define WHEEL_TORQUE_LIMIT 4.0
 
 namespace ocare_controllers
 {
@@ -44,10 +49,17 @@ namespace ocare_controllers
         double m_pitch;
         double m_yaw;
 
+        // command of robot
+        double m_cmd_yaw;
+        double m_cmd_vel;
+
 
 
         void command_callback(const trajectory_msgs::JointTrajectoryPoint::ConstPtr &referencePoint);
+        void command_twist_callback(const geometry_msgs::Twist::ConstPtr &referenceTwist);
         void callback_imu(const sensor_msgs::Imu::ConstPtr& msg);
+
+        static double cot_angle(double _degree);
 
     public:
         FuzzyController();

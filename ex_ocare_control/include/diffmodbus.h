@@ -15,6 +15,9 @@
 
 #define COUNT_SENSORS 2
 
+#define SENSOR_REG_START 100
+#define SENSOR_REG_COUNT 13
+
 class DiffModbus : public HWModule
 {
 public:
@@ -78,6 +81,7 @@ public:
         TORQUE_MED_CMD,
         TORQUE_LOW_CMD
     };
+
 
     // Write DATA to Arduino via modbus
     bool write();

@@ -64,6 +64,8 @@ bool ArduModbus::connect_slave() {
             // Setting Arduino slaver ID
             modbus_set_slave(m_ctx, _hw->getSlaveID());
 
+            // Delay 5 ms for waiting switch slaver
+            usleep(0.005 * 1000000);
             if (modbus_connect(m_ctx) == -1) {
 #ifdef _ROS
                 ROS_ERROR("Modbus Connection failed: %s\n", modbus_strerror(errno))
@@ -112,6 +114,7 @@ bool ArduModbus::registerHWModule(HWModule* _p_module) {
 
 bool ArduModbus::write() {
 
+    // Makesure that modbus is connected
     if(is_modbus_state_ready == false) {
 #ifdef _ROS
         ROS_ERROR("Modbus : Modbus not connect yet! \n")
@@ -122,6 +125,12 @@ bool ArduModbus::write() {
     }
 
     for(HWModule* _hw : m_hw_modules) {
+        // Setting Arduino slaver ID
+        modbus_set_slave(m_ctx, _hw->getSlaveID());
+
+        // Delay 5 ms for waiting switch slaver
+        usleep(0.005 * 1000000);
+
         if(!_hw->write()) {
 #ifdef _ROS
         ROS_ERROR("HWModule : HWModule can not write! \n")
@@ -136,6 +145,8 @@ bool ArduModbus::write() {
 }
 
 bool ArduModbus::read() {
+
+    // Makesure that modbus is connected
     if(is_modbus_state_ready == false) {
 #ifdef _ROS
         ROS_ERROR("Modbus : Modbus not connect yet! \n")
@@ -146,6 +157,12 @@ bool ArduModbus::read() {
     }
 
     for(HWModule* _hw : m_hw_modules) {
+        // Setting Arduino slaver ID
+        modbus_set_slave(m_ctx, _hw->getSlaveID());
+
+        // Delay 5 ms for waiting switch slaver
+        usleep(0.005 * 1000000);
+
         if(!_hw->read()) {
 #ifdef _ROS
         ROS_ERROR("HWModule : HWModule can not read! \n")

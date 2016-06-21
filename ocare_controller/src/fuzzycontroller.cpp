@@ -6,7 +6,8 @@
 
 
 
-ocare_controllers::FuzzyController::FuzzyController() : m_roll(0.0), m_pitch(0.0), m_yaw(0.0) {
+ocare_controllers::FuzzyController::FuzzyController() :
+    m_roll(0.0), m_pitch(0.0), m_yaw(0.0), m_cmd_vel(0.0), m_cmd_yaw(0.0) {
 }
 
 ocare_controllers::FuzzyController::~FuzzyController() {
@@ -16,6 +17,16 @@ ocare_controllers::FuzzyController::~FuzzyController() {
 void ocare_controllers::FuzzyController::command_callback(
         const trajectory_msgs::JointTrajectoryPoint::ConstPtr &referencePoint) {
     // TODO: get TrajectoryPoint and set the value to Class
+    const double *pos_ = referencePoint->positions.data();
+}
+
+void ocare_controllers::FuzzyController::command_twist_callback(
+        const geometry_msgs::Twist::ConstPtr &referenceTwist) {
+
+    // Set the reference Z axis angle
+    m_cmd_yaw = referenceTwist->angular.z;
+    m_cmd_vel = referenceTwist->linear.x;
+
 }
 
 bool ocare_controllers::FuzzyController::init(
@@ -66,6 +77,31 @@ void ocare_controllers::FuzzyController::starting(const ros::Time &time) {
 }
 
 void ocare_controllers::FuzzyController::update(const ros::Time &time, const ros::Duration &duration) {
+
+    double err = m_cmd_yaw - m_yaw;
+    err = cot_angle(err);
+
+    double left_torque_     = err * 100     + m_cmd_vel;
+    double right_torque_    = err * (-100)  + m_cmd_vel;
+
+    if (left_torque_ > WHEEL_TORQUE_LIMIT) {
+        left_torque_ = WHEEL_TORQUE_LIMIT;
+    }
+    if (right_torque_ > WHEEL_TORQUE_LIMIT) {
+        right_torque_ = WHEEL_TORQUE_LIMIT;
+    }
+
+    if (left_torque_ < -WHEEL_TORQUE_LIMIT) {
+        left_torque_ = -WHEEL_TORQUE_LIMIT;
+    }
+    if (right_torque_ < -WHEEL_TORQUE_LIMIT) {
+        right_torque_ = -WHEEL_TORQUE_LIMIT;
+    }
+
+    m_left_wheel.setCommand(left_torque_);
+    m_left_wheel.setCommand(right_torque_);
+
+
    return;
 }
 
@@ -162,6 +198,18 @@ bool ocare_controllers::FuzzyController::read_parameter(JointType _type) {
     return true;
 }
 
+double ocare_controllers::FuzzyController::cot_angle(double _degree) {
+
+    if( _degree < 0.0) {
+        double times_ = fabs(_degree) / (2*M_PI);
+        return ( fmod( _degree + ( 2*M_PI * (floor(times_)+1) ) + M_PI  ,2*M_PI) - M_PI);
+    } else if ( _degree > 0.0) {
+        return ( fmod( _degree + M_PI ,2*M_PI) - M_PI);
+    } else {
+        return 0.0;
+    }
+
+}
 
 PLUGINLIB_EXPORT_CLASS(ocare_controllers::FuzzyController,
         controller_interface::ControllerBase)
