@@ -4,7 +4,6 @@
   <param name="robot_description" command="$(find xacro)/xacro $(find labrob_description)/urdf/ocare_realworld.urdf.xacro" />
   
   <!-- Load joint controller configurations from YAML file to parameter server -->
-
   <rosparam file="$(find ex_ocare_control)/config/controller_config.yaml" command="load"/>
 
   <!-- main robot hardware interface handler node -->

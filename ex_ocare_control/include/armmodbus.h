@@ -17,7 +17,7 @@
 class ArmModbus : public HWModule
 {
 public:
-    ArmModbus();
+    ArmModbus(char* _name, size_t _length);
     ~ArmModbus();
 
     // Define the Modbus HOLD_REGISTER Mapping

@@ -21,7 +21,7 @@
 class DiffModbus : public HWModule
 {
 public:
-    DiffModbus();
+    DiffModbus(char* _name, size_t _length);
     ~DiffModbus();
 
     // Define the Modbus HOLD_REGISTER Mapping

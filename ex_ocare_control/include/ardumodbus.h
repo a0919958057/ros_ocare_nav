@@ -19,6 +19,13 @@
 #define HOLD_REG_SIZE 9
 #define HOLD_REG_READ_ONLY_SIZE 4
 
+// If using ROS system then Define ROS
+#define _ROS
+
+#ifdef _ROS
+#include "ros/ros.h"
+#endif
+
 class ArduModbus
 {
 public:

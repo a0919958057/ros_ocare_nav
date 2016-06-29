@@ -21,16 +21,16 @@ bool ArduModbus::init(char *_device, int _baud, int _stopbit, int _parity) {
     else {
 
 #ifdef _ROS
-        ROS_ERROR("Modbus Serial device Parameter error! \n")
+        ROS_ERROR("Modbus Serial device init Parameter error! \n");
 #else
-        fprintf(stderr, "Modbus Serial device Parameter error! \n");
+        fprintf(stderr, "Modbus Serial device init Parameter error! \n");
 #endif
         return false;
     }
 
     if (m_ctx == NULL) {
 #ifdef _ROS
-        ROS_ERROR("Unable to create the libmodbus context\n")
+        ROS_ERROR("Unable to create the libmodbus context\n");
 #else
         fprintf(stderr, "Unable to create the libmodbus context\n");
 #endif
@@ -68,7 +68,7 @@ bool ArduModbus::connect_slave() {
             usleep(0.005 * 1000000);
             if (modbus_connect(m_ctx) == -1) {
 #ifdef _ROS
-                ROS_ERROR("Modbus Connection failed: %s\n", modbus_strerror(errno))
+                ROS_ERROR("Modbus Connection failed: %s\n", modbus_strerror(errno));
 #else
                 fprintf(stderr, "Modbus Connection failed: %s\n", modbus_strerror(errno));
 #endif
@@ -81,7 +81,7 @@ bool ArduModbus::connect_slave() {
         else
         {
 #ifdef _ROS
-            ROS_ERROR("Modbus : Slave id must 1~253 \n")
+            ROS_ERROR("Modbus : Slave id must 1~253 \n");
 #else
             fprintf(stderr, "Modbus : Slave id must 1~253 \n");
 #endif
@@ -105,7 +105,7 @@ bool ArduModbus::registerHWModule(HWModule* _p_module) {
 
     m_hw_modules.push_back(_p_module);
 #ifdef _ROS
-        ROS_INFO("ArduModbus : HWModule register successful! \n")
+        ROS_INFO("ArduModbus : HWModule register successful! \n");
 #else
         fprintf(stdout, "ArduModbus : HWModule register successful! \n");
 #endif
@@ -117,7 +117,7 @@ bool ArduModbus::write() {
     // Makesure that modbus is connected
     if(is_modbus_state_ready == false) {
 #ifdef _ROS
-        ROS_ERROR("Modbus : Modbus not connect yet! \n")
+        ROS_ERROR("Modbus Write: Modbus not connect yet! \n");
 #else
         fprintf(stderr, "Modbus : Modbus not connect yet! \n");
 #endif
@@ -133,9 +133,9 @@ bool ArduModbus::write() {
 
         if(!_hw->write()) {
 #ifdef _ROS
-        ROS_ERROR("HWModule : HWModule can not write! \n")
+        ROS_ERROR("HWModule Write: HWModule can not write! \n", _hw->m_name);
 #else
-        fprintf(stderr, "HWModule : HWModule can not write! \n");
+        fprintf(stderr, "HWModule Write: HWModule can not write! \n", _hw->m_name);
 #endif
         return false;
         }
@@ -149,9 +149,9 @@ bool ArduModbus::read() {
     // Makesure that modbus is connected
     if(is_modbus_state_ready == false) {
 #ifdef _ROS
-        ROS_ERROR("Modbus : Modbus not connect yet! \n")
+        ROS_ERROR("Modbus Read: Modbus not connect yet! \n");
 #else
-        fprintf(stderr, "Modbus : Modbus not connect yet! \n");
+        fprintf(stderr, "Modbus Read: Modbus not connect yet! \n");
 #endif
         return false;
     }
@@ -165,9 +165,9 @@ bool ArduModbus::read() {
 
         if(!_hw->read()) {
 #ifdef _ROS
-        ROS_ERROR("HWModule : HWModule can not read! \n")
+        ROS_ERROR("HWModule Read: HWModule %s can not read! \n", _hw->m_name);
 #else
-        fprintf(stderr, "HWModule : HWModule can not read! \n");
+        fprintf(stderr, "HWModule Read: HWModule %s can not read! \n", _hw->m_name);
 #endif
         return false;
         }

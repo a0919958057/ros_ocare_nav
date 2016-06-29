@@ -1,6 +1,7 @@
 #include "diffmodbus.h"
 
-DiffModbus::DiffModbus() :
+DiffModbus::DiffModbus(char* _name, size_t _length) :
+    HWModule(_name, _length),
     m_chassis_mode(ChassisModeCMD::MODE_STOP_CMD),
     m_left_wheel_torque(0),
     m_right_wheel_torque(0),

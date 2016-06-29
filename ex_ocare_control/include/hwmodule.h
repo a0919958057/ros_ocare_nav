@@ -15,7 +15,7 @@ class HWModule
 {
 public:
 
-    HWModule();
+    HWModule(char* _name, size_t _length);
     ~HWModule();
 
     // Read via Modbus
@@ -36,6 +36,9 @@ public:
 
     // The remote slave ID
     uint16_t m_slave_id;
+
+    // The hardware name
+    char m_name[20];
 
 };
 

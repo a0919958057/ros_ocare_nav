@@ -46,7 +46,7 @@ public:
     ~OcareRobot();
 
     // Must call this function to init the class
-    void init(ros::NodeHandlePtr _node);
+    void init(ros::NodeHandle* _node);
 
     ros::Time getTime() const { return ros::Time::now(); }
     ros::Duration getPeriod() const { return ros::Duration(0.01); }

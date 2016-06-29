@@ -2,8 +2,13 @@
 
 
 
-OcareRobot::OcareRobot() : m_arm(), m_diff(), m_modbus()
+OcareRobot::OcareRobot() :
+    m_modbus(),
+    m_arm("Robot left arm",sizeof("Robot left arm")),
+    m_diff("Robot wheel",sizeof("Robot wheel"))
     {
+    ROS_INFO("Create HWModuble Object.");
+
     ROS_INFO("Create JointStateHandle...");
 
 
@@ -99,7 +104,7 @@ OcareRobot::OcareRobot() : m_arm(), m_diff(), m_modbus()
 
 OcareRobot::~OcareRobot() {}
 
-void OcareRobot::init(ros::NodeHandlePtr _node) {
+void OcareRobot::init(ros::NodeHandle* _node) {
     // subscribe the command from ros topic
     _node->subscribe("diff_mode_cmd", 50, &OcareRobot::diff_cmd_callback, this);
     _node->subscribe("arm_mode_cmd", 50, &OcareRobot::arm_cmd_callback, this);

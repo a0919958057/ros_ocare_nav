@@ -1,7 +1,8 @@
 #include "armmodbus.h"
 
 
-ArmModbus::ArmModbus() :
+ArmModbus::ArmModbus(char* _name, size_t _length) :
+    HWModule(_name, _length),
     m_l_motor1_degree(0),
     m_l_motor2_degree(0),
     m_l_catch_level(0),
