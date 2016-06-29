@@ -13,7 +13,7 @@
 
 #include<math.h>
 
-#define WHEEL_TORQUE_LIMIT 4.0
+#define WHEEL_TORQUE_LIMIT 200.0
 
 namespace ocare_controllers
 {
