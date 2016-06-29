@@ -93,15 +93,15 @@ public:
 
     // The robot state cmd
     ChassisModeCMD m_chassis_mode;
-    uint16_t m_left_wheel_torque;
-    uint16_t m_right_wheel_torque;
+    int16_t m_left_wheel_torque;
+    int16_t m_right_wheel_torque;
     TrackingTorqueModeCMD m_track_torque_mode;
 
     // The robot state cueent
     // Note :read only
     ChassisMode m_read_chassis_mode;
-    uint16_t m_read_left_wheel_torque;
-    uint16_t m_read_right_wheel_torque;
+    int16_t m_read_left_wheel_torque;
+    int16_t m_read_right_wheel_torque;
     TrackingTorqueMode m_read_track_torque_mode;
     uint16_t m_read_sensor_datas[COUNT_SENSORS];
 

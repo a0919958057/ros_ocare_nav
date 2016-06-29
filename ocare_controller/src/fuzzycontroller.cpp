@@ -81,11 +81,25 @@ void ocare_controllers::FuzzyController::starting(const ros::Time &time) {
 
 void ocare_controllers::FuzzyController::update(const ros::Time &time, const ros::Duration &duration) {
 
-    double err = m_cmd_yaw - m_yaw;
-    err = cot_angle(err);
+    static double err_old(0);
+    static double err(0);
+    err_old = err;
+    err = m_cmd_yaw - m_yaw;
 
-    double left_torque_     = err * (-500)     + m_cmd_vel;
-    double right_torque_    = err * (500)       + m_cmd_vel;
+    double error_dot = (err - err_old) / duration.toSec();
+
+    double err_modify = cot_angle(err);
+
+
+
+    double output_p = err_modify * (300);
+    double output_d = error_dot * (10);
+
+
+    double left_torque_     = - output_p - output_d + m_cmd_vel;
+    double right_torque_    =   output_p + output_d + m_cmd_vel;
+
+
     // TODO: Modify the P controller to PID controller
 
     if (left_torque_ > WHEEL_TORQUE_LIMIT) {

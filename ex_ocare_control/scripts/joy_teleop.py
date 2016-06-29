@@ -6,10 +6,10 @@ from sensor_msgs.msg import Joy
 def callback(data):
 	twist = Twist()
 	if  abs(data.axes[1]) > 0.05 :
-		twist.linear.x = (data.axes[1])/2
+		twist.linear.x = (data.axes[1]) * 100
 		
-	if abs(data.axes[2]) > 0.1:
-		twist.angular.z = -4*(data.axes[2])
+	if abs(data.axes[2]) > 0.01:
+		twist.angular.z = 3.1415926*(data.axes[2]) / 4
 		
 	pub.publish(twist)
  
@@ -17,7 +17,7 @@ def joy_teleop():
 	rospy.init_node('Joy_teleop')
 	rospy.Subscriber("joy", Joy, callback)
 	global pub
-	pub = rospy.Publisher('/cmd_vel', Twist)
+	pub = rospy.Publisher('/ocare/pose_fuzzy_controller/diff_cmd', Twist)
  
 	r = rospy.Rate(10) # 10hz
 	while not rospy.is_shutdown():
