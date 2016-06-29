@@ -40,7 +40,7 @@ bool ArduModbus::init(char *_device, int _baud, int _stopbit, int _parity) {
     // Setup the modbus serial mode to RS232 <USE FDTI232>
     modbus_rtu_set_serial_mode(m_ctx, MODBUS_RTU_RS232);
 
-#ifdef _DEBUG
+#ifdef _MOSBUS_DEBUG
     modbus_set_debug(m_ctx, ON);
 #else
     modbus_set_debug(m_ctx, OFF);

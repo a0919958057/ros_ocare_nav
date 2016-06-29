@@ -22,6 +22,9 @@
 // If using ROS system then Define ROS
 #define _ROS
 
+// If need modbus debug then Define _MOSBUS_DEBUG
+//#define _MOSBUS_DEBUG
+
 #ifdef _ROS
 #include "ros/ros.h"
 #endif

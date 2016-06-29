@@ -14,7 +14,7 @@ int main(int argc, char** argv) {
     ros::NodeHandle node;
 
     ros::Publisher diff_pub =
-            node.advertise<std_msgs::UInt16MultiArray>("diff_mode_cmd",100);
+            node.advertise<std_msgs::UInt16MultiArray>("/diff_mode_cmd",100);
 
     ros::Rate r(10);
 
@@ -31,6 +31,8 @@ int main(int argc, char** argv) {
 
         cmd_message.data.push_back((uint16_t)DiffModbus::MODE_CONTROLLABLE_CMD);
         cmd_message.data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
+
+        ROS_INFO("PUBLISH SUCCESS");
 
         diff_pub.publish(cmd_message);
 

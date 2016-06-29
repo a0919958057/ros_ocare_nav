@@ -106,8 +106,8 @@ OcareRobot::~OcareRobot() {}
 
 void OcareRobot::init(ros::NodeHandle* _node) {
     // subscribe the command from ros topic
-    _node->subscribe("diff_mode_cmd", 50, &OcareRobot::diff_cmd_callback, this);
-    _node->subscribe("arm_mode_cmd", 50, &OcareRobot::arm_cmd_callback, this);
+    m_diff_cmd_sub = _node->subscribe("/diff_mode_cmd", 50, &OcareRobot::diff_cmd_callback, this);
+    m_arm_cmd_sub = _node->subscribe("/arm_mode_cmd", 50, &OcareRobot::arm_cmd_callback, this);
 
     // Initial the modbus
     m_modbus.init("/dev/ttyUSB0",115200,2,'N');
@@ -132,9 +132,9 @@ void OcareRobot::diff_cmd_callback(const std_msgs::UInt16MultiArrayConstPtr _mes
     case DiffModbus::ChassisModeCMD::MODE_CONTROLLABLE_CMD:
     case DiffModbus::ChassisModeCMD::MODE_STOP_CMD:
 
+        //ROS_INFO("Received DIFF MOD CMD topic : %d", diff_mode);
         // If the mode is exist then set mode
         m_diff.m_chassis_mode = DiffModbus::ChassisModeCMD(diff_mode);
-
         break;
     default:
         ROS_ERROR("Can't reslove the Diffmode Mode type !\n");

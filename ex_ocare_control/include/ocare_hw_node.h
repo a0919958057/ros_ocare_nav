@@ -16,6 +16,7 @@
 
 #define _ROS
 
+
 // include the robot HWModule modbus class
 #include "armmodbus.h"
 #include "diffmodbus.h"
@@ -84,6 +85,10 @@ private:
 
     // The interface from ros to modbus
     ArduModbus m_modbus;
+
+    // Subscriber for COMMAND
+    ros::Subscriber m_diff_cmd_sub;
+    ros::Subscriber m_arm_cmd_sub;
 
 };
 

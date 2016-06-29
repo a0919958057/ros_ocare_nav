@@ -40,6 +40,7 @@ bool DiffModbus::write() {
      *
      **********************************************/
     // Note there is a continue register
+
     reg[CMD_CHASSIS_MODE - CMD_CHASSIS_MODE]           = static_cast<uint16_t>(m_chassis_mode);
     reg[CMD_LEFT_WHEEL_TORQUE - CMD_CHASSIS_MODE]      = m_left_wheel_torque;
     reg[CMD_RIGHT_WHEEL_TORQUE - CMD_CHASSIS_MODE]     = m_right_wheel_torque;

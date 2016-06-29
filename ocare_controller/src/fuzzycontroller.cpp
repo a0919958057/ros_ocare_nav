@@ -84,8 +84,9 @@ void ocare_controllers::FuzzyController::update(const ros::Time &time, const ros
     double err = m_cmd_yaw - m_yaw;
     err = cot_angle(err);
 
-    double left_torque_     = err * 100     + m_cmd_vel;
-    double right_torque_    = err * (-100)  + m_cmd_vel;
+    double left_torque_     = err * (-500)     + m_cmd_vel;
+    double right_torque_    = err * (500)       + m_cmd_vel;
+    // TODO: Modify the P controller to PID controller
 
     if (left_torque_ > WHEEL_TORQUE_LIMIT) {
         left_torque_ = WHEEL_TORQUE_LIMIT;
@@ -100,9 +101,11 @@ void ocare_controllers::FuzzyController::update(const ros::Time &time, const ros
     if (right_torque_ < -WHEEL_TORQUE_LIMIT) {
         right_torque_ = -WHEEL_TORQUE_LIMIT;
     }
+    //ROS_INFO("ERROR = %f", err);
+    //ROS_INFO("Torque L:%f\t R:%f", left_torque_, right_torque_);
 
     m_left_wheel.setCommand(left_torque_);
-    m_left_wheel.setCommand(right_torque_);
+    m_right_wheel.setCommand(right_torque_);
 
 
    return;
@@ -116,9 +119,13 @@ void ocare_controllers::FuzzyController::callback_imu(const sensor_msgs::Imu::Co
     double roll, pitch, yaw;
     m.getRPY(roll,pitch,yaw);
 
-    m_roll = angles::to_degrees(roll);
-    m_pitch = angles::to_degrees(pitch);
-    m_yaw = angles::to_degrees(yaw);
+//    m_roll = angles::to_degrees(roll);
+//    m_pitch = angles::to_degrees(pitch);
+//    m_yaw = angles::to_degrees(yaw);
+
+    m_roll = (roll);
+    m_pitch = (pitch);
+    m_yaw = (yaw);
 
     //ROS_INFO("Imu Orientation x:[%f], y:[%f], z:[%f]", roll, pitch, yaw);
 }
