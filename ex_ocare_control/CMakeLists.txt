@@ -163,6 +163,8 @@ add_executable(ex_ocare_control_node
 
 add_executable(diff_test_cmd_publisher_node test/diff_test_cmd_publisher.cpp)
 
+add_executable(diff_test_stage_node test/diff_test_stage.cpp)
+
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 add_dependencies(ex_ocare_control_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
@@ -173,6 +175,7 @@ target_link_libraries(ex_ocare_control_node
     ${LIBS}
 )
 target_link_libraries(diff_test_cmd_publisher_node ${catkin_LIBRARIES})
+target_link_libraries(diff_test_stage_node ${catkin_LIBRARIES})
 
 #############
 ## Install ##
