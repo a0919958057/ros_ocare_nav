@@ -161,15 +161,18 @@ add_executable(ex_ocare_control_node
                                 src/diffmodbus.cpp
                                 src/hwmodule.cpp)
 
+add_executable(diff_test_cmd_publisher_node test/diff_test_cmd_publisher.cpp)
+
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 add_dependencies(ex_ocare_control_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
- target_link_libraries(ex_ocare_control_node
-   ${catkin_LIBRARIES}
-   ${LIBS}
- )
+target_link_libraries(ex_ocare_control_node
+    ${catkin_LIBRARIES}
+    ${LIBS}
+)
+target_link_libraries(diff_test_cmd_publisher_node ${catkin_LIBRARIES})
 
 #############
 ## Install ##

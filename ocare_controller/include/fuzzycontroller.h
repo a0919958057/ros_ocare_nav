@@ -41,6 +41,8 @@ namespace ocare_controllers
 
         // subcriber for command
         ros::Subscriber m_sub_command;
+        // subcriber for diff Twist command
+        ros::Subscriber m_sub_diff_command;
         // subcriber for pose_imu
         ros::Subscriber m_pose_imu;
 

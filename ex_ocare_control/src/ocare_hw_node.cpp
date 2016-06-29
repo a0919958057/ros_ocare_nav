@@ -118,7 +118,8 @@ void OcareRobot::init(ros::NodeHandle* _node) {
 
 
 
-// Subscribe callback for diffmode command
+/****************** Subscribe callback for diffmode command *******************/
+
 void OcareRobot::diff_cmd_callback(const std_msgs::UInt16MultiArrayConstPtr _messages) {
 
     // Read the Topic message by specific format, read : DiffTopicCMD
@@ -157,7 +158,8 @@ void OcareRobot::diff_cmd_callback(const std_msgs::UInt16MultiArrayConstPtr _mes
 
 }
 
-// Subscribe callback for armmode command
+/****************** Subscribe callback for arm mode command *******************/
+
 void OcareRobot::arm_cmd_callback(const std_msgs::UInt16MultiArrayConstPtr _messages) {
 
     // Read the Topic message by specific format, read : ArmTopicCMD

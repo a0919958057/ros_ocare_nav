@@ -43,7 +43,7 @@ bool ArduModbus::init(char *_device, int _baud, int _stopbit, int _parity) {
 #ifdef _DEBUG
     modbus_set_debug(m_ctx, ON);
 #else
-    modbus_set_debug(m_ctx, ON);
+    modbus_set_debug(m_ctx, OFF);
 #endif
 
     is_serial_state_ready = true;

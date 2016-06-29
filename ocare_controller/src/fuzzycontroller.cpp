@@ -48,8 +48,11 @@ bool ocare_controllers::FuzzyController::init(
 
 
 
-    // setup the subscribe for command
+    // setup the subscribe for arm command
     m_sub_command = m_node.subscribe("command", 1000, &FuzzyController::command_callback, this);
+
+    // setup the subscribe for diff command
+    m_sub_diff_command = m_node.subscribe("diff_cmd", 1000, &FuzzyController::command_twist_callback, this);
 
     // setup the subscribe for imu data
     m_pose_imu = m_node.subscribe(imu_topic,100,&FuzzyController::callback_imu, this);
