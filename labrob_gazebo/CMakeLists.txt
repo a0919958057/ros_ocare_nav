@@ -5,11 +5,7 @@ project(labrob_gazebo)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  gazebo_msgs
-  gazebo_plugins
-  gazebo_ros
-  gazebo_ros_control
-  labrob_description
+
 )
 
 ## System dependencies are found with CMake's conventions
