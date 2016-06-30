@@ -9,7 +9,7 @@ def callback(data):
 		twist.linear.x = (data.axes[1]) * 100
 		
 	if abs(data.axes[2]) > 0.01:
-		twist.angular.z = 3.1415926*(data.axes[2]) / 4
+		twist.angular.z = 3.1415926*(data.axes[2]) /2
 		
 	pub.publish(twist)
  
