@@ -13,10 +13,13 @@
 
 #include "hwmodule.h"
 
-#define COUNT_SENSORS 2
-
 #define SENSOR_REG_START 100
 #define SENSOR_REG_COUNT 13
+
+#define REG_CMD_START   CMD_CHASSIS_MODE
+#define REG_CMD_END     CMD_SENSOR_BW_MODE
+#define REG_READ_START  CHASSIS_MODE
+#define REG_READ_END    SENSOR_BW_MODE
 
 class DiffModbus : public HWModule
 {
@@ -24,25 +27,27 @@ public:
     DiffModbus(char* _name, size_t _length);
     ~DiffModbus();
 
+    /********************** Modbus Information ************************/
+
     // Define the Modbus HOLD_REGISTER Mapping
     enum StateHoldRegister {
-      CHASSIS_MODE,
-      LEFT_WHEEL_TORQUE,
-      RIGHT_WHEEL_TORQUE,
-      TRACKLINE_TORQUE_MODE,
-      SENSOR_DATA1,
-      SENSOR_DATA2,
-      CMD_CHASSIS_MODE,
-      CMD_LEFT_WHEEL_TORQUE,
-      CMD_RIGHT_WHEEL_TORQUE,
-      CMD_TRACKLINE_TORQUE_MODE
+        CHASSIS_MODE,
+        LEFT_WHEEL_TORQUE,
+        RIGHT_WHEEL_TORQUE,
+        TRACKLINE_TORQUE_MODE,
+        SENSOR_BW_MODE,
+        CMD_CHASSIS_MODE,
+        CMD_LEFT_WHEEL_TORQUE,
+        CMD_RIGHT_WHEEL_TORQUE,
+        CMD_TRACKLINE_TORQUE_MODE,
+        CMD_SENSOR_BW_MODE
     };
 
     /******Defination of the Chassis Mode
-     * MODE_TRACK_LINE :     Tracking the path and follow the path
-     * MODE_CONTROLLABLE:    The Arduino would use LEFT_WHEEL_TORQUE and RIGHT_WHEEL_TORQUE to effort the wheel
-     * MODE_STOP:            All of the driver would stop until Mode become others.
-     * **************************/
+    * TRACK_LINE :     Tracking the path and follow the path
+    * CONTROLLABLE:    The Arduino would use LEFT_WHEEL_TORQUE and RIGHT_WHEEL_TORQUE to effort the wheel
+    * STOP:            All of the driver would stop until Mode become others.
+    * **************************/
     enum ChassisMode {
         MODE_TRACK_LINE,
         MODE_CONTROLLABLE,
@@ -50,10 +55,10 @@ public:
     };
 
     /******Defination of the Chassis Mode command
-     * MODE_TRACK_LINE_CMD :     Tracking the path and follow the path
-     * MODE_CONTROLLABLE_CMD:    The Arduino would use LEFT_WHEEL_TORQUE and RIGHT_WHEEL_TORQUE to effort the wheel
-     * MODE_STOP_CMD:            All of the driver would stop until Mode become others.
-     * **************************/
+    * TRACK_LINE :     Tracking the path and follow the path
+    * CONTROLLABLE:    The Arduino would use LEFT_WHEEL_TORQUE and RIGHT_WHEEL_TORQUE to effort the wheel
+    * STOP:            All of the driver would stop until Mode become others.
+    * **************************/
     enum ChassisModeCMD {
         MODE_TRACK_LINE_CMD,
         MODE_CONTROLLABLE_CMD,
@@ -61,10 +66,10 @@ public:
     };
 
     /******Defination of the Chassis Mode
-     * TORQUE_HIGH :           Useing the higher torque Fuzzy rule
-     * TORQUE_MED:             Useing the normal torque Fuzzy rule
-     * TORQUE_LOW:             Useing the low torque Fuzzy rule
-     * **************************/
+    * HIGH :           Useing the higher torque Fuzzy rule
+    * MED:             Useing the normal torque Fuzzy rule
+    * LOW:             Useing the low torque Fuzzy rule
+    * **************************/
     enum TrackingTorqueMode {
         TORQUE_HIGH,
         TORQUE_MED,
@@ -72,15 +77,35 @@ public:
     };
 
     /******Defination of the Chassis Mode command
-     * TORQUE_HIGH_CMD :           command arduino use the higher torque Fuzzy rule
-     * TORQUE_MED_CMD:             command arduino use the normal torque Fuzzy rule
-     * TORQUE_LOW_CMD:             command arduino use the low torque Fuzzy rule
-     * **************************/
+    * HIGH :           command arduino use the higher torque Fuzzy rule
+    * MED:             command arduino use the normal torque Fuzzy rule
+    * LOW:             command arduino use the low torque Fuzzy rule
+    * **************************/
     enum TrackingTorqueModeCMD {
         TORQUE_HIGH_CMD,
         TORQUE_MED_CMD,
         TORQUE_LOW_CMD
     };
+
+    /******Defination of the Sensor BW Mode
+    * BLACK :           Tracking the black line
+    * WRITE:            Tracking the white line
+    * **************************/
+    enum SensorBWMode {
+        BLACK,
+        WHITE
+    };
+
+    /******Defination of the Sensor BW Mode command
+    * BLACK_CMD :           Command arduino track the black line
+    * WRITE_CMD:            Command arduino track white line
+    * **************************/
+    enum SensorBWModeCMD {
+        BLACK_CMD,
+        WHITE_CMD,
+    };
+
+    /******************************************************************/
 
 
     // Write DATA to Arduino via modbus
@@ -96,6 +121,7 @@ public:
     int16_t m_left_wheel_torque;
     int16_t m_right_wheel_torque;
     TrackingTorqueModeCMD m_track_torque_mode;
+    SensorBWModeCMD m_sensor_bw_mode;
 
     // The robot state cueent
     // Note :read only
@@ -103,7 +129,8 @@ public:
     int16_t m_read_left_wheel_torque;
     int16_t m_read_right_wheel_torque;
     TrackingTorqueMode m_read_track_torque_mode;
-    uint16_t m_read_sensor_datas[COUNT_SENSORS];
+    SensorBWMode m_read_sensor_bw_mode;
+    uint16_t m_read_sensor_datas[SENSOR_REG_COUNT];
 
 
 };

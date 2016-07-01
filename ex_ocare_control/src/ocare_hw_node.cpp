@@ -108,10 +108,12 @@ void OcareRobot::init(ros::NodeHandle* _node) {
     // subscribe the command from ros topic
     m_diff_cmd_sub = _node->subscribe("/diff_mode_cmd", 50, &OcareRobot::diff_cmd_callback, this);
     m_arm_cmd_sub = _node->subscribe("/arm_mode_cmd", 50, &OcareRobot::arm_cmd_callback, this);
+    m_track_line_pub = _node->advertise<std_msgs::UInt16MultiArray>("/track_line_sensor", 100);
 
     // Initial the modbus
     m_modbus.init("/dev/ttyUSB0",115200,2,'N');
     //m_modbus.registerHWModule(&m_arm);
+
     m_modbus.registerHWModule(&m_diff);
     m_modbus.connect_slave();
 }
@@ -234,6 +236,10 @@ void OcareRobot::read(ros::Time time, ros::Duration period) {
     // Sync data from robot
     m_modbus.read();
 
+
+    // Publish the sensor data
+    publish_sensor_data();
+
     // Sync data from ArmModbus to ROS
     switch (m_arm.m_l_slider_mode) {
     case ArmModbus::SliderState::SLIDER_HOME:
@@ -255,8 +261,6 @@ void OcareRobot::read(ros::Time time, ros::Duration period) {
     // Sync data from DiffModbus to ROS
     // Current no data can read
 
-
-
 }
 
 void OcareRobot::write(ros::Time time, ros::Duration period) {
@@ -272,6 +276,30 @@ void OcareRobot::write(ros::Time time, ros::Duration period) {
     // Sync data to robot
     m_modbus.write();
 
+}
+
+void OcareRobot::publish_sensor_data() {
+    // Create a Sensor data message
+    std_msgs::UInt16MultiArray sensor_msg;
+    for(int i=0; i<SENSOR_REG_COUNT; i++)
+        sensor_msg.data.push_back(m_diff.m_read_sensor_datas[i]);
+
+    // Sent Sensor data message
+    m_track_line_pub.publish(sensor_msg);
+//    ROS_INFO("%3d,%3d,%3d,%3d,%3d,%3d,%3d,%3d,%3d,%3d,%3d,%3d,%3d",
+//            m_diff.m_read_sensor_datas[0],
+//            m_diff.m_read_sensor_datas[1],
+//            m_diff.m_read_sensor_datas[2],
+//            m_diff.m_read_sensor_datas[3],
+//            m_diff.m_read_sensor_datas[4],
+//            m_diff.m_read_sensor_datas[5],
+//            m_diff.m_read_sensor_datas[6],
+//            m_diff.m_read_sensor_datas[7],
+//            m_diff.m_read_sensor_datas[8],
+//            m_diff.m_read_sensor_datas[9],
+//            m_diff.m_read_sensor_datas[10],
+//            m_diff.m_read_sensor_datas[11],
+//            m_diff.m_read_sensor_datas[12]);
 }
 
 

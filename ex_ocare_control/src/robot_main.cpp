@@ -30,7 +30,6 @@ int main(int argc, char** argv) {
 
         ros::Time now = robot.getTime();
         ros::Duration dt = robot.getPeriod();
-        //ROS_INFO("Duration : %d",dt.sec);
         robot.read(now, dt);
 
         cm.update(now, dt);

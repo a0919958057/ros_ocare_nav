@@ -58,6 +58,9 @@ public:
     // Write Robot state using Packet by Serial interface
     void write(ros::Time time, ros::Duration period);
 
+    // Publish the sensor data
+    void publish_sensor_data();
+
     // Subscribe callback for diffmode and armmode
     void diff_cmd_callback(const std_msgs::UInt16MultiArrayConstPtr _messages);
     void arm_cmd_callback(const std_msgs::UInt16MultiArrayConstPtr _messages);
@@ -79,6 +82,8 @@ private:
     double wheel_vel[2];
     double wheel_eff[2];
 
+    uint16_t m_sensor_datas[SENSOR_REG_COUNT];
+
     // The hardware Register define and implementation
     ArmModbus m_arm;
     DiffModbus m_diff;
@@ -89,6 +94,9 @@ private:
     // Subscriber for COMMAND
     ros::Subscriber m_diff_cmd_sub;
     ros::Subscriber m_arm_cmd_sub;
+
+    // Publisher who publish the Tracking line sensor
+    ros::Publisher m_track_line_pub;
 
 };
 
