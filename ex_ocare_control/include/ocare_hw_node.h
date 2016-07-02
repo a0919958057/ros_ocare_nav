@@ -28,7 +28,8 @@
 // The Diff command Topic Struct for uint16_t array
 enum DiffTopicCMD {
     DIFF_MODE_CMD,
-    TRACK_TORQUE_MODE_CMD
+    TRACK_TORQUE_MODE_CMD,
+    SENSOR_BW_MODE_CMD
 };
 
 // The Arm command Topic Struct for uint16_t array

@@ -127,6 +127,7 @@ void OcareRobot::diff_cmd_callback(const std_msgs::UInt16MultiArrayConstPtr _mes
     // Read the Topic message by specific format, read : DiffTopicCMD
     uint16_t diff_mode      = _messages->data.at(DiffTopicCMD::DIFF_MODE_CMD);
     uint16_t torque_mode    = _messages->data.at(DiffTopicCMD::TRACK_TORQUE_MODE_CMD);
+    uint16_t bw_mode        = _messages->data.at(DiffTopicCMD::SENSOR_BW_MODE_CMD);
 
     // Pharse the command and write to DiffModbus class
     switch(DiffModbus::ChassisModeCMD(diff_mode)) {
@@ -156,6 +157,20 @@ void OcareRobot::diff_cmd_callback(const std_msgs::UInt16MultiArrayConstPtr _mes
         ROS_ERROR("Can't reslove the Diffmode Torque type !\n");
         break;
     }
+
+    switch(DiffModbus::SensorBWModeCMD(bw_mode)) {
+    case DiffModbus::SensorBWModeCMD::BLACK_CMD:
+    case DiffModbus::SensorBWModeCMD::WHITE_CMD:
+
+        // If the mode is exist then set mode
+        m_diff.m_sensor_bw_mode = DiffModbus::SensorBWModeCMD(bw_mode);
+
+        break;
+    default:
+        ROS_ERROR("Can't reslove the Diffmode Torque type !\n");
+        break;
+    }
+
 
 
 }

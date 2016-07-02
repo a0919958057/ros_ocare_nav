@@ -36,13 +36,13 @@ bool fg_start(true);
 
 #define NO_LINE_THROSHOLD (100)
 #define SIZE_DATA_RECOARD (10)
-#define CONVERG_THROSHOLD (M_PI * 10.0/180.0)
+#define CONVERG_THROSHOLD (M_PI * 5.0/180.0)
 
 /************************************************/
 
 /**************** DEBUG Flags ******************/
 
-#define _DEBUG_SENSOR
+//#define _DEBUG_SENSOR
 
 #define DT_STAGE_CHANGE_DETECT "StageChangeDetecter"
 #define DT_LOOP_TESK_DEBUG     "LoopTesk"
@@ -54,6 +54,11 @@ bool fg_start(true);
 
 double front_length(10);
 double orient(0);
+
+bool sensor_ready(false);
+bool imu_ready(false);
+bool laser_ready(false);
+
 int sensor_value[SENSOR_REG_COUNT] = { 0 };
 
 void loop_tesk(int _stage, ros::Publisher* _diff_pub, ros::Publisher* _diff_twist_pub);
@@ -62,25 +67,45 @@ void do_button_tesk(int _stage, std_msgs::UInt16MultiArray* _mode_msg, geometry_
 bool stage_change_detect(int _stage);
 double get_sensor_average();
 bool is_sensor_noline();
+double cot_angle(double _degree);
 
 void callback_laser(const sensor_msgs::LaserScanConstPtr &msg) {
     double length_sum(0);
     for(int i=250;i<260;i++)
      length_sum += msg.get()->ranges[i];
     front_length = length_sum / 10;
+    laser_ready = true;
 }
 
 void callback_imu(const sensor_msgs::ImuConstPtr &msg) {
-    tf::Quaternion m;
-    tf::quaternionMsgToTF( msg.get()->orientation, m);
-    orient = tf::getYaw(m);
+    tf::Matrix3x3 m(tf::Quaternion(msg->orientation.x,msg->orientation.y,msg->orientation.z,msg->orientation.w));
+    double roll, pitch, yaw;
+    m.getRPY(roll,pitch,yaw);
+    orient = (yaw);
+    imu_ready = true;
 }
 
 void callback_sensor(const std_msgs::UInt16MultiArrayConstPtr &msg) {
     const short unsigned int* ptr = msg->data.data();
     for(int i=0; i<SENSOR_REG_COUNT; i++) {
-        sensor_value[i] = ptr[i];
+        sensor_value[i] = 100-ptr[i];
     }
+    sensor_ready = true;
+
+    ROS_DEBUG_NAMED("SensorCallback","%3d,%3d,%3d,%3d,%3d,%3d,%3d,%3d,%3d,%3d,%3d,%3d,%3d",
+            sensor_value[0],
+            sensor_value[1],
+            sensor_value[2],
+            sensor_value[3],
+            sensor_value[4],
+            sensor_value[5],
+            sensor_value[6],
+            sensor_value[7],
+            sensor_value[8],
+            sensor_value[9],
+            sensor_value[10],
+            sensor_value[11],
+            sensor_value[12]);
 }
 
 int main(int argc, char** argv) {
@@ -102,26 +127,45 @@ int main(int argc, char** argv) {
             node.subscribe<std_msgs::UInt16MultiArray>("/track_line_sensor",50,callback_sensor);
 
 /******************************** Publishers ********************************/
+    /********** The Diff command Topic Struct for uint16_t array
+    *  enum DiffTopicCMD {
+    *     DIFF_MODE_CMD,
+    *     TRACK_TORQUE_MODE_CMD,
+    *     SENSOR_BW_MODE_CMD
+    *  };
+    ***************************************************************/
 
-    /******Defination of the Chassis Mode
+
+    /******Defination of the Chassis Mode for Control Mode
      * MODE_TRACK_LINE :     Tracking the path and follow the path
      * MODE_CONTROLLABLE:    The Arduino would use LEFT_WHEEL_TORQUE and RIGHT_WHEEL_TORQUE to effort the wheel
      * MODE_STOP:            All of the driver would stop until Mode become others.
+     * **************************/
+
+    /****** Defination of the Chassis Mode for Tracking line
+     * HIGH :           Useing the higher torque Fuzzy rule
+     * MED:             Useing the normal torque Fuzzy rule
+     * LOW:             Useing the low torque Fuzzy rule
+     * **************************/
+
+    /******Defination of the Sensor BW Mode
+     * BLACK :           Tracking the black line
+     * WRITE:            Tracking the white line
      * **************************/
 
     // Create a publish that publish the differential wheel Mode
     ros::Publisher diff_pub =
             node.advertise<std_msgs::UInt16MultiArray>("/diff_mode_cmd",50);
 
-    /******Defination of the Chassis Mode
-     * MODE_TRACK_LINE :     Tracking the path and follow the path
-     * MODE_CONTROLLABLE:    The Arduino would use LEFT_WHEEL_TORQUE and RIGHT_WHEEL_TORQUE to effort the wheel
-     * MODE_STOP:            All of the driver would stop until Mode become others.
+    /******Defination of the Chassis Torque CMD
+     * Linear.x :            The forward speed CMD
+     * Angular.z:            The Orient CMD
      * **************************/
 
     // Create a publish that publish the differential wheel Torque CMD
     ros::Publisher diff_twist_pub =
             node.advertise<geometry_msgs::Twist>("/ocare/pose_fuzzy_controller/diff_cmd",50);
+
 
 /*****************************************************************************/
 
@@ -163,34 +207,32 @@ int main(int argc, char** argv) {
                 sensor_value[12]);
 
 #else
-        // Do the current stage tesk
-        loop_tesk(stage, &diff_pub, &diff_twist_pub);
+        // Makesure every sensor topic is ready.
+        if( sensor_ready && imu_ready && laser_ready ) {
+            // Do the current stage tesk
+            loop_tesk(stage, &diff_pub, &diff_twist_pub);
 
-        // Detect the stage change
-        if(stage == 11) {
-            if(stage_change_detect(stage)) stage = 110;
-        }
-        else if( stage >= 110 | stage <=113) {
-            if(stage_change_detect(stage)) stage++;
-            if(stage == 114) stage = 12;
-        }
-        else if (stage == 20) {
-            if(stage_change_detect(stage)) stage = 200;
-        }
-        else if( stage >= 200 | stage <=202) {
-            if(stage_change_detect(stage)) stage++;
-            if(stage == 203) stage = 21;
-        }
-        else {
+            // Detect the stage change
+            if(stage == 11 && fg_need_bulb) {   // If Need Bulb tesk and stage is 11, then Change stage to Bulk tesk
+                if(stage_change_detect(stage)) stage = 110;
+            }
+            else if( stage >= 110 && stage <=113) {
+                if(stage_change_detect(stage)) stage++;
+                if(stage == 114) stage = 12;
+            }
+            else if (stage == 20) {
+                if(stage_change_detect(stage)) stage = 200;
+            }
+            else if( stage >= 200 && stage <=202) {
+                if(stage_change_detect(stage)) stage++;
+                if(stage == 203) stage = 21;
+            }
+            else {
 
-            if(stage_change_detect(stage)) stage++;
-            // If need push button
-            if(stage == 11) {
-                // TODO: detect switch
-                if(fg_need_bulb)
-                    stage = 11;
-                else
-                    stage = 12;
+                if(stage_change_detect(stage)) {
+                    ROS_INFO("STAGE CHANGE");
+                    stage++;
+                }
             }
         }
 #endif
@@ -221,6 +263,7 @@ void loop_tesk(int _stage, ros::Publisher* _diff_pub, ros::Publisher* _diff_twis
     case 0:
         cmd_message.data.push_back((uint16_t)DiffModbus::MODE_STOP_CMD);
         cmd_message.data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
+        cmd_message.data.push_back((uint16_t)DiffModbus::WHITE_CMD);
         cmd_twist.linear.x = 0;
         cmd_twist.angular.z = 0;
         break;
@@ -228,6 +271,7 @@ void loop_tesk(int _stage, ros::Publisher* _diff_pub, ros::Publisher* _diff_twis
 
         cmd_message.data.push_back((uint16_t)DiffModbus::MODE_CONTROLLABLE_CMD);
         cmd_message.data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
+        cmd_message.data.push_back((uint16_t)DiffModbus::WHITE_CMD);
         cmd_twist.linear.x = 0;
         cmd_twist.angular.z = M_PI * -45.0/180.0;
         break;
@@ -235,6 +279,7 @@ void loop_tesk(int _stage, ros::Publisher* _diff_pub, ros::Publisher* _diff_twis
 
         cmd_message.data.push_back((uint16_t)DiffModbus::MODE_TRACK_LINE_CMD);
         cmd_message.data.push_back((uint16_t)DiffModbus::TORQUE_LOW_CMD);
+        cmd_message.data.push_back((uint16_t)DiffModbus::WHITE_CMD);
         cmd_twist.linear.x = 0;
         cmd_twist.angular.z = 0;
         break;
@@ -246,6 +291,7 @@ void loop_tesk(int _stage, ros::Publisher* _diff_pub, ros::Publisher* _diff_twis
 
         cmd_message.data.push_back((uint16_t)DiffModbus::MODE_TRACK_LINE_CMD);
         cmd_message.data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
+        cmd_message.data.push_back((uint16_t)DiffModbus::WHITE_CMD);
         cmd_twist.linear.x = 0;
         cmd_twist.angular.z = 0;
         break;
@@ -253,13 +299,15 @@ void loop_tesk(int _stage, ros::Publisher* _diff_pub, ros::Publisher* _diff_twis
 
         cmd_message.data.push_back((uint16_t)DiffModbus::MODE_CONTROLLABLE_CMD);
         cmd_message.data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
+        cmd_message.data.push_back((uint16_t)DiffModbus::WHITE_CMD);
         cmd_twist.linear.x = 50;
-        cmd_twist.angular.z = M_PI * -90.0/180.0;
+        cmd_twist.angular.z = M_PI * 90.0/180.0;
         break;
     case 9:
 
         cmd_message.data.push_back((uint16_t)DiffModbus::MODE_CONTROLLABLE_CMD);
         cmd_message.data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
+        cmd_message.data.push_back((uint16_t)DiffModbus::WHITE_CMD);
         cmd_twist.linear.x = 0;
         cmd_twist.angular.z = M_PI * 180.0/180.0;
         break;
@@ -267,10 +315,17 @@ void loop_tesk(int _stage, ros::Publisher* _diff_pub, ros::Publisher* _diff_twis
 
         cmd_message.data.push_back((uint16_t)DiffModbus::MODE_CONTROLLABLE_CMD);
         cmd_message.data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
+        cmd_message.data.push_back((uint16_t)DiffModbus::WHITE_CMD);
         cmd_twist.linear.x = 50;
         cmd_twist.angular.z = M_PI * 180.0/180.0;
         break;
     case 11:
+        cmd_message.data.push_back((uint16_t)DiffModbus::MODE_CONTROLLABLE_CMD);
+        cmd_message.data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
+        cmd_message.data.push_back((uint16_t)DiffModbus::WHITE_CMD);
+        cmd_twist.linear.x = 40;
+        cmd_twist.angular.z = M_PI * 180.0/180.0;
+        break;
     case 110:
     case 111:
     case 112:
@@ -282,40 +337,50 @@ void loop_tesk(int _stage, ros::Publisher* _diff_pub, ros::Publisher* _diff_twis
 
         cmd_message.data.push_back((uint16_t)DiffModbus::MODE_TRACK_LINE_CMD);
         cmd_message.data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
+        cmd_message.data.push_back((uint16_t)DiffModbus::WHITE_CMD);
         cmd_twist.linear.x = 0;
         cmd_twist.angular.z = 0;
         break;
     case 13:
         cmd_message.data.push_back((uint16_t)DiffModbus::MODE_CONTROLLABLE_CMD);
         cmd_message.data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
+        cmd_message.data.push_back((uint16_t)DiffModbus::WHITE_CMD);
         cmd_twist.linear.x = 50;
         cmd_twist.angular.z = 0;
         break;
     case 14:
         cmd_message.data.push_back((uint16_t)DiffModbus::MODE_CONTROLLABLE_CMD);
         cmd_message.data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
+        cmd_message.data.push_back((uint16_t)DiffModbus::WHITE_CMD);
         cmd_twist.linear.x = 0;
-        cmd_twist.angular.z = M_PI * -90.0/180.0;
+        cmd_twist.angular.z = M_PI * 90.0/180.0;
         break;
     case 15:
         cmd_message.data.push_back((uint16_t)DiffModbus::MODE_CONTROLLABLE_CMD);
         cmd_message.data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
+        cmd_message.data.push_back((uint16_t)DiffModbus::WHITE_CMD);
         cmd_twist.linear.x = 50;
-        cmd_twist.angular.z = M_PI * -90.0/180.0;
+        cmd_twist.angular.z = M_PI * 90.0/180.0;
         break;
     case 16:
         cmd_message.data.push_back((uint16_t)DiffModbus::MODE_TRACK_LINE_CMD);
         cmd_message.data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
+        cmd_message.data.push_back((uint16_t)DiffModbus::WHITE_CMD);
         cmd_twist.linear.x = 0;
         cmd_twist.angular.z = 0;
         break;
     case 17:
-        // TODO:Tracking the black line, need add new mode
+        cmd_message.data.push_back((uint16_t)DiffModbus::MODE_TRACK_LINE_CMD);
+        cmd_message.data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
+        cmd_message.data.push_back((uint16_t)DiffModbus::BLACK_CMD);
+        cmd_twist.linear.x = 0;
+        cmd_twist.angular.z = 0;
         break;
     case 18:
     case 19:
         cmd_message.data.push_back((uint16_t)DiffModbus::MODE_TRACK_LINE_CMD);
         cmd_message.data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
+        cmd_message.data.push_back((uint16_t)DiffModbus::WHITE_CMD);
         cmd_twist.linear.x = 0;
         cmd_twist.angular.z = 0;
         break;
@@ -329,6 +394,7 @@ void loop_tesk(int _stage, ros::Publisher* _diff_pub, ros::Publisher* _diff_twis
     case 21:
         cmd_message.data.push_back((uint16_t)DiffModbus::MODE_STOP_CMD);
         cmd_message.data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
+        cmd_message.data.push_back((uint16_t)DiffModbus::WHITE_CMD);
         cmd_twist.linear.x = 0;
         cmd_twist.angular.z = 0;
         break;
@@ -367,10 +433,12 @@ private:
     double data_recoard[SIZE_DATA_RECOARD];
 public:
     // Need init first
-    void init(int _ref) {
+    void init(double _ref) {
         fg_inited = true;
         ref_data = _ref;
-        memset(data_recoard,5,sizeof(SIZE_DATA_RECOARD));
+        for(int i=0;i<SIZE_DATA_RECOARD;i++) {
+            data_recoard[i] = 10.0;
+        }
     }
 
     bool start() {
@@ -390,9 +458,11 @@ public:
 
     void update() {
         if(fg_started) {
-            data_recoard[index_counter] = fabs(ref_data - orient);
+            data_recoard[index_counter] = cot_angle(fabs(ref_data - orient));
             index_counter++;
-            if(index_counter >= SIZE_DATA_RECOARD) index_counter = 0;
+            if(index_counter == SIZE_DATA_RECOARD) index_counter = 0;
+            ROS_INFO_NAMED("ConvergDetector", "Debug : Error= %f ,ref_data = %f,orient = %f",
+                           fabs(ref_data - orient),ref_data,orient);
         }
         else {
             ROS_ERROR_NAMED("ConvergDetector", "Need start first!");
@@ -400,6 +470,7 @@ public:
     }
 
     bool isConverged() {
+
         if(fg_started) {
             double sum(0);
             double avg(0);
@@ -407,8 +478,11 @@ public:
                 sum += data_recoard[i];
             }
             avg = sum / SIZE_DATA_RECOARD;
+            ROS_INFO_NAMED("ConvergDetector", "Debug : Avg = %f ",avg);
             return (CONVERG_THROSHOLD > avg);
+
         }
+
         else {
             ROS_ERROR_NAMED("ConvergDetector", "Need start first!");
             return false;
@@ -467,9 +541,9 @@ public:
 
     void update() {
         if(fg_started) {
-            if( get_sensor_average() > 70 && b_detected < 0)
+            if( get_sensor_average() > 0 && get_sensor_average() < 30 && b_detected < 0)
                 b_detected = head ++;
-            if( get_sensor_average() < 30 && w_detected < 0)
+            if( get_sensor_average() > 70 && w_detected < 0)
                 w_detected = head ++;
         }
         else {
@@ -547,25 +621,27 @@ bool stage_change_detect(int _stage) {
     case 3:
         // Detect the Orient is cross at 0 degree
         last_time = ros::Time::now();
-        if(fabs(orient - M_PI * 0.0/0.0) < 0.1) return true;
+        ROS_INFO("Orient %f",orient);
+        if(fabs(orient - M_PI * 0.0/180.0) < 0.1) return true;
+
         break;
     case 4:
         // Detect the Orient is cross at 0 degree and Timing from last stage large than 1 sec
-        if(fabs(last_time.toSec() - ros::Time::now().toSec()) > 1.0 && fabs(orient - M_PI * 0.0/0.0) < 0.1) {
+        if(fabs(last_time.toSec() - ros::Time::now().toSec()) > 1.0 && fabs(orient - M_PI * 0.0/180.0) < 0.1) {
             last_time = ros::Time::now();
             return true;
         }
         break;
     case 5:
         // Detect the Orient is cross at 0 degree and Timing from last stage large than 1 sec
-        if(fabs(last_time.toSec() - ros::Time::now().toSec()) > 1.0 && fabs(orient - M_PI * 0.0/0.0) < 0.1) {
+        if(fabs(last_time.toSec() - ros::Time::now().toSec()) > 1.0 && fabs(orient - M_PI * 0.0/180.0) < 0.1) {
             last_time = ros::Time::now();
             return true;
         }
         break;
     case 6:
         // Detect the Orient is cross at 0 degree and Timing from last stage large than 1 sec
-        if(fabs(last_time.toSec() - ros::Time::now().toSec()) > 1.0 && fabs(orient - M_PI * 0.0/0.0) < 0.1) {
+        if(fabs(last_time.toSec() - ros::Time::now().toSec()) > 1.0 && fabs(orient - M_PI * 0.0/180.0) < 0.1) {
             last_time = ros::Time::now();
             return true;
         }
@@ -573,7 +649,7 @@ bool stage_change_detect(int _stage) {
     case 7:
         // Detect the Orient is stable at 90 degree and no line
         if(!stable_detector.isStarted()) {
-            stable_detector.init(M_PI * -45.0/180);
+            stable_detector.init(M_PI * 90.0/180);
             stable_detector.start();
         } else {
             stable_detector.update();
@@ -587,7 +663,7 @@ bool stage_change_detect(int _stage) {
     case 8:
         // Detect the Orient is stable at 90 degree and Distence is less than 0.3 m
         if(!stable_detector.isStarted()) {
-            stable_detector.init(M_PI * -45.0/180);
+            stable_detector.init(M_PI * 90.0/180);
             stable_detector.start();
         } else {
             stable_detector.update();
@@ -618,9 +694,9 @@ bool stage_change_detect(int _stage) {
         }
         break;
     case 10:
-        // TODO :Detect all white change to black
+        // Detect all Black change to White
         if(!wb_detector.isStarted()) {
-            wb_detector.init(true);
+            wb_detector.init(false);
             wb_detector.start();
         } else {
             wb_detector.update();
@@ -631,15 +707,24 @@ bool stage_change_detect(int _stage) {
         }
         break;
     case 11:
-        if(fg_need_bulb) {
-            fg_usetimer = true;
-            last_time = ros::Time::now();
+        if(!wb_detector.isStarted()) {
+            wb_detector.init(true);
+            wb_detector.start();
+        } else {
+            wb_detector.update();
+        }
+        if(wb_detector.isDetected()) {
+            wb_detector.stop();
+            if(fg_need_bulb) {
+                fg_usetimer = true;
+                last_time = ros::Time::now();
+            }
             return true;
         }
         break;
     case 110:
         if(fg_usetimer) {
-            if(ros::Time::now().toSec() - last_time.toSec() > 1.0) {
+            if(ros::Time::now().toSec() - last_time.toSec() > 5.0) {
                 last_time = ros::Time::now();
                 return true;
             }
@@ -649,7 +734,7 @@ bool stage_change_detect(int _stage) {
         break;
     case 111:
         if(fg_usetimer) {
-            if(ros::Time::now().toSec() - last_time.toSec() > 1.0) {
+            if(ros::Time::now().toSec() - last_time.toSec() > 5.0) {
                 last_time = ros::Time::now();
                 return true;
             }
@@ -659,7 +744,7 @@ bool stage_change_detect(int _stage) {
         break;
     case 112:
         if(fg_usetimer) {
-            if(ros::Time::now().toSec() - last_time.toSec() > 1.0) {
+            if(ros::Time::now().toSec() - last_time.toSec() > 5.0) {
                 fg_usetimer = false;
                 last_time = ros::Time::now();
                 return true;
@@ -741,7 +826,7 @@ bool stage_change_detect(int _stage) {
         } else {
             stable_detector.update();
         }
-        if(stable_detector.isConverged() && get_sensor_average() < 50.0) {
+        if(stable_detector.isConverged() && get_sensor_average() < 30.0) {
             stable_detector.stop();
             return true;
         }
@@ -755,7 +840,7 @@ bool stage_change_detect(int _stage) {
         } else {
             stable_detector.update();
         }
-        if(stable_detector.isConverged() && get_sensor_average() > 50.0) {
+        if(stable_detector.isConverged() && get_sensor_average() > 70.0) {
             stable_detector.stop();
             return true;
         }
@@ -784,7 +869,7 @@ bool stage_change_detect(int _stage) {
         return true;
     case 200:
         if(fg_usetimer) {
-            if(ros::Time::now().toSec() - last_time.toSec() > 1.0) {
+            if(ros::Time::now().toSec() - last_time.toSec() > 3.0) {
                 last_time = ros::Time::now();
                 return true;
             }
@@ -794,7 +879,7 @@ bool stage_change_detect(int _stage) {
         break;
     case 201:
         if(fg_usetimer) {
-            if(ros::Time::now().toSec() - last_time.toSec() > 1.0) {
+            if(ros::Time::now().toSec() - last_time.toSec() > 4.0) {
                 last_time = ros::Time::now();
                 return true;
             }
@@ -833,24 +918,28 @@ void do_button_tesk(int _stage, std_msgs::UInt16MultiArray* _mode_msg, geometry_
     case 110:
         _mode_msg->data.push_back((uint16_t)DiffModbus::MODE_CONTROLLABLE_CMD);
         _mode_msg->data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
+        _mode_msg->data.push_back((uint16_t)DiffModbus::WHITE_CMD);
         _twist_msg->linear.x = 40;
         _twist_msg->angular.z = M_PI * 180.0/180.0;
         break;
     case 111:
         _mode_msg->data.push_back((uint16_t)DiffModbus::MODE_CONTROLLABLE_CMD);
         _mode_msg->data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
+        _mode_msg->data.push_back((uint16_t)DiffModbus::WHITE_CMD);
         _twist_msg->linear.x = 0;
         _twist_msg->angular.z = M_PI * 150.0/180.0;
         break;
     case 112:
         _mode_msg->data.push_back((uint16_t)DiffModbus::MODE_CONTROLLABLE_CMD);
         _mode_msg->data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
+        _mode_msg->data.push_back((uint16_t)DiffModbus::WHITE_CMD);
         _twist_msg->linear.x = 0;
         _twist_msg->angular.z = M_PI * -170/180.0;
         break;
     case 113:
         _mode_msg->data.push_back((uint16_t)DiffModbus::MODE_CONTROLLABLE_CMD);
         _mode_msg->data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
+        _mode_msg->data.push_back((uint16_t)DiffModbus::WHITE_CMD);
         _twist_msg->linear.x = 40;
         _twist_msg->angular.z = M_PI * -170/180.0;
         break;
@@ -861,21 +950,25 @@ void do_button_tesk(int _stage, std_msgs::UInt16MultiArray* _mode_msg, geometry_
 
 void do_gohome_tesk(int _stage, std_msgs::UInt16MultiArray* _mode_msg, geometry_msgs::Twist* _twist_msg) {
     switch(_stage) {
+    case 20:
     case 200:
         _mode_msg->data.push_back((uint16_t)DiffModbus::MODE_CONTROLLABLE_CMD);
         _mode_msg->data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
+        _mode_msg->data.push_back((uint16_t)DiffModbus::WHITE_CMD);
         _twist_msg->linear.x = 40;
         _twist_msg->angular.z = M_PI * -90.0/180.0;
         break;
     case 201:
         _mode_msg->data.push_back((uint16_t)DiffModbus::MODE_CONTROLLABLE_CMD);
         _mode_msg->data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
+        _mode_msg->data.push_back((uint16_t)DiffModbus::WHITE_CMD);
         _twist_msg->linear.x = 0;
         _twist_msg->angular.z = M_PI * 0.0/180.0;
         break;
     case 202:
         _mode_msg->data.push_back((uint16_t)DiffModbus::MODE_CONTROLLABLE_CMD);
         _mode_msg->data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
+        _mode_msg->data.push_back((uint16_t)DiffModbus::WHITE_CMD);
         _twist_msg->linear.x = -40;
         _twist_msg->angular.z = M_PI * 0.0/180.0;
         break;
@@ -888,7 +981,9 @@ bool is_sensor_noline() {
     for(int i=0; i<SENSOR_REG_COUNT; i++) {
         sum += sensor_value[i];
     }
-    if(sum < NO_LINE_THROSHOLD)
+    ROS_INFO("SENSOR VALUE[0] = %d", sensor_value);
+    ROS_INFO("NOLINE DEBUG sum = %d", sum);
+    if(sum > NO_LINE_THROSHOLD)
         return true;
     else
         return false;
@@ -900,4 +995,17 @@ double get_sensor_average() {
         sum += sensor_value[i];
     }
     return sum / SENSOR_REG_COUNT;
+}
+
+double cot_angle(double _degree) {
+
+    if( _degree < 0.0) {
+        double times_ = fabs(_degree) / (2*M_PI);
+        return ( fmod( _degree + ( 2*M_PI * (floor(times_)+1) ) + M_PI  ,2*M_PI) - M_PI);
+    } else if ( _degree > 0.0) {
+        return ( fmod( _degree + M_PI ,2*M_PI) - M_PI);
+    } else {
+        return 0.0;
+    }
+
 }
