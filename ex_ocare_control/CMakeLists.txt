@@ -187,11 +187,11 @@ target_link_libraries(ex_ocare_control_node
     ${catkin_LIBRARIES}
     ${LIBS}
 )
-target_link_libraries(diff_test_cmd_publisher_node ${catkin_LIBRARIES})
-target_link_libraries(diff_test_stage_node ${catkin_LIBRARIES})
+target_link_libraries(diff_test_cmd_publisher_node ${catkin_LIBRARIES} ${LIBS})
+target_link_libraries(diff_test_stage_node ${catkin_LIBRARIES} ${LIBS})
 
-target_link_libraries(detector_test_node ${catkin_LIBRARIES})
-target_link_libraries(utest_detector ${catkin_LIBRARIES})
+target_link_libraries(detector_test_node ${catkin_LIBRARIES} ${LIBS})
+target_link_libraries(utest_detector ${catkin_LIBRARIES} ${LIBS})
 
 #############
 ## Install ##

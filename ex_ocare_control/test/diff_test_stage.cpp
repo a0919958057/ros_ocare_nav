@@ -19,7 +19,9 @@
 
 #ifdef __arm__
 
-#include<wiringPi.h>
+extern "C" {
+#include <wiringPi.h>
+}
 
 #define PIN_SW_NEED_BULB_TESK (21)
 #define PIN_SW_START          (22)
@@ -109,6 +111,11 @@ void callback_sensor(const std_msgs::UInt16MultiArrayConstPtr &msg) {
 }
 
 int main(int argc, char** argv) {
+
+#ifdef __arm__
+    if( wiringPiSetup() == -1)
+        ROS_ERROR("WiringPi LIBRARY can't loading.");
+#endif
 
     // Initial the ROS
     ros::init(argc,argv,"diff_test_stage_node");
