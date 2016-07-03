@@ -36,9 +36,13 @@ bool fg_start(true);
 
 /****************    Config   *******************/
 
-#define NO_LINE_THROSHOLD (100)
+#define NO_LINE_THROSHOLD (SENSOR_REG_COUNT * 100 - 100)
 #define SIZE_DATA_RECOARD (10)
 #define CONVERG_THROSHOLD (M_PI * 5.0/180.0)
+
+#define TASK_8_LENGTH_FRONT     (0.3)
+#define TASK_10_LENGTH_RIGHT    (0.4)
+#define TASK_13_LENGTH_FRONT    (0.5)
 
 /************************************************/
 
@@ -55,6 +59,9 @@ bool fg_start(true);
 /***********************************************/
 
 double front_length(10);
+double right_length(10);
+double left_length(10);
+
 double orient(0);
 
 bool sensor_ready(false);
@@ -73,9 +80,20 @@ double cot_angle(double _degree);
 
 void callback_laser(const sensor_msgs::LaserScanConstPtr &msg) {
     double length_sum(0);
+    for(int i=0;i<10;i++)
+     length_sum += msg.get()->ranges[i];
+    right_length = length_sum / 10;
+
+    length_sum = 0;
     for(int i=250;i<260;i++)
      length_sum += msg.get()->ranges[i];
     front_length = length_sum / 10;
+
+    length_sum = 0;
+    for(int i=500;i<510;i++)
+     length_sum += msg.get()->ranges[i];
+    left_length = length_sum / 10;
+
     laser_ready = true;
 }
 
@@ -183,7 +201,7 @@ int main(int argc, char** argv) {
 
     printf("Which stage to start?(0~20) \n");
     scanf("%d", &stage);
-    if(stage < 0 || stage > 20) {
+    if(stage < 0 || stage > 21) {
         printf("Parameter error, Start at stage 0");
         stage = 0;
     }
@@ -324,7 +342,7 @@ void loop_tesk(int _stage, ros::Publisher* _diff_pub, ros::Publisher* _diff_twis
         cmd_message.data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
         cmd_message.data.push_back((uint16_t)DiffModbus::WHITE_CMD);
         cmd_twist.linear.x = 50;
-        cmd_twist.angular.z = M_PI * 180.0/180.0;
+        cmd_twist.angular.z = M_PI * 180.0/180.0 - (right_length - TASK_10_LENGTH_RIGHT);
         break;
     case 11:
         cmd_message.data.push_back((uint16_t)DiffModbus::MODE_CONTROLLABLE_CMD);
@@ -523,8 +541,8 @@ private:
 
 public:
     // Need init first
-    void init(double _is_w2b) {
-        fg_w2b = true;
+    void init(bool _is_w2b) {
+        fg_w2b = _is_w2b;
         head = 0;
         w_detected = -1;
         b_detected = -1;
@@ -547,14 +565,16 @@ public:
     }
 
     void update() {
+        ROS_DEBUG_NAMED("WBDetector", "w_detected:%d, b_detected:%d, sensor AVG: %f",
+                        w_detected, b_detected, get_sensor_average());
         if(fg_started) {
-            if( get_sensor_average() > 0 && get_sensor_average() < 30 && b_detected < 0)
+            if( get_sensor_average() > 70.0 && b_detected < 0)
                 b_detected = head ++;
-            if( get_sensor_average() > 70 && w_detected < 0)
+            if( get_sensor_average() < 30.0 && w_detected < 0)
                 w_detected = head ++;
         }
         else {
-            ROS_ERROR_NAMED("ConvergDetector", "Need start first!");
+            ROS_ERROR_NAMED("WBDetector", "Need start first!");
         }
     }
 
@@ -675,7 +695,7 @@ bool stage_change_detect(int _stage) {
         } else {
             stable_detector.update();
         }
-        if(front_length < 0.3)
+        if(front_length < TASK_8_LENGTH_FRONT)
             laser_distence_overlimit_conter ++;
 
         // If there the distence less than 0.3 m too many times, we have confidence say that we need turning now
@@ -796,7 +816,7 @@ bool stage_change_detect(int _stage) {
         } else {
             stable_detector.update();
         }
-        if(front_length < 0.5)
+        if(front_length < TASK_13_LENGTH_FRONT)
             laser_distence_overlimit_conter ++;
 
         // If there the distence less than 0.3 m too many times, we have confidence say that we need turning now
@@ -986,7 +1006,7 @@ void do_gohome_tesk(int _stage, std_msgs::UInt16MultiArray* _mode_msg, geometry_
 bool is_sensor_noline() {
     int sum(0);
     for(int i=0; i<SENSOR_REG_COUNT; i++) {
-        sum += sensor_value[i];
+            sum += sensor_value[i];
     }
     ROS_INFO("SENSOR VALUE[0] = %d", sensor_value);
     ROS_INFO("NOLINE DEBUG sum = %d", sum);
