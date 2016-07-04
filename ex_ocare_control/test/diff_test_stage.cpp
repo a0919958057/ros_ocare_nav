@@ -8,6 +8,7 @@
 #include"std_msgs/MultiArrayDimension.h"
 #include"std_msgs/MultiArrayLayout.h"
 #include"std_msgs/UInt16MultiArray.h"
+#include"std_msgs/Int32.h"
 #include"sensor_msgs/LaserScan.h"
 #include"sensor_msgs/Imu.h"
 #include"geometry_msgs/Twist.h"
@@ -63,6 +64,7 @@ double right_length(10);
 double left_length(10);
 
 double orient(0);
+int stage(0);
 
 bool sensor_ready(false);
 bool imu_ready(false);
@@ -77,6 +79,10 @@ bool stage_change_detect(int _stage);
 double get_sensor_average();
 bool is_sensor_noline();
 double cot_angle(double _degree);
+
+void callback_stage_cmd(const std_msgs::Int32ConstPtr &msg) {
+    stage = msg->data;
+}
 
 void callback_laser(const sensor_msgs::LaserScanConstPtr &msg) {
     double length_sum(0);
@@ -197,7 +203,7 @@ int main(int argc, char** argv) {
     // Using the 10 hz for while loop
     ros::Rate r(20);
 
-    int stage(0);
+
 
     printf("Which stage to start?(0~20) \n");
     scanf("%d", &stage);
