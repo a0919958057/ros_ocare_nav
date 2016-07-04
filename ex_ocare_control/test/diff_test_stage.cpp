@@ -351,7 +351,7 @@ void loop_tesk(int _stage, ros::Publisher* _diff_pub, ros::Publisher* _diff_twis
         cmd_message.data.push_back((uint16_t)DiffModbus::WHITE_CMD);
         cmd_twist.linear.x = 50;
         cmd_twist.angular.z = M_PI * 180.0/180.0 -
-                (right_length - TASK_10_LENGTH_RIGHT)*cos(orient - M_PI * 180.0/180.0);
+                (right_length)*cos(orient - M_PI * 180.0/180.0) + TASK_10_LENGTH_RIGHT;
         break;
     case 11:
         cmd_message.data.push_back((uint16_t)DiffModbus::MODE_CONTROLLABLE_CMD);
@@ -380,7 +380,7 @@ void loop_tesk(int _stage, ros::Publisher* _diff_pub, ros::Publisher* _diff_twis
         cmd_message.data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
         cmd_message.data.push_back((uint16_t)DiffModbus::WHITE_CMD);
         cmd_twist.linear.x = 50;
-        cmd_twist.angular.z = 0 - (right_length - TASK_13_LENGTH_RIGHT)*cos(orient);
+        cmd_twist.angular.z = 0 - (right_length )*cos(orient) + TASK_13_LENGTH_RIGHT;
         break;
     case 14:
         cmd_message.data.push_back((uint16_t)DiffModbus::MODE_CONTROLLABLE_CMD);
@@ -395,7 +395,7 @@ void loop_tesk(int _stage, ros::Publisher* _diff_pub, ros::Publisher* _diff_twis
         cmd_message.data.push_back((uint16_t)DiffModbus::WHITE_CMD);
         cmd_twist.linear.x = 50;
         cmd_twist.angular.z = M_PI * 90.0/180.0 -
-                (right_length - TASK_15_LENGTH_RIGHT)*cos(orient - M_PI * 90.0/180.0);
+                (right_length)*cos(orient - M_PI * 90.0/180.0) + TASK_15_LENGTH_RIGHT;
         break;
     case 16:
         cmd_message.data.push_back((uint16_t)DiffModbus::MODE_TRACK_LINE_CMD);
