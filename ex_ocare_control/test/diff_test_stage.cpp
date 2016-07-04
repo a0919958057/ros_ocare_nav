@@ -41,9 +41,9 @@ bool fg_start(true);
 #define SIZE_DATA_RECOARD (10)
 #define CONVERG_THROSHOLD (M_PI * 5.0/180.0)
 
-#define TASK_8_LENGTH_FRONT     (0.3)
+#define TASK_8_LENGTH_FRONT     (0.4)
 #define TASK_10_LENGTH_RIGHT    (0.4)
-#define TASK_13_LENGTH_FRONT    (0.5)
+#define TASK_13_LENGTH_FRONT    (0.6)
 
 /************************************************/
 
