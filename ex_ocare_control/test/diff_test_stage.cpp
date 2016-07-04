@@ -348,7 +348,8 @@ void loop_tesk(int _stage, ros::Publisher* _diff_pub, ros::Publisher* _diff_twis
         cmd_message.data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
         cmd_message.data.push_back((uint16_t)DiffModbus::WHITE_CMD);
         cmd_twist.linear.x = 50;
-        cmd_twist.angular.z = M_PI * 180.0/180.0 - (right_length - TASK_10_LENGTH_RIGHT);
+        cmd_twist.angular.z = M_PI * 180.0/180.0 -
+                (right_length - TASK_10_LENGTH_RIGHT)*cos(orient - M_PI * 180.0/180.0);
         break;
     case 11:
         cmd_message.data.push_back((uint16_t)DiffModbus::MODE_CONTROLLABLE_CMD);
