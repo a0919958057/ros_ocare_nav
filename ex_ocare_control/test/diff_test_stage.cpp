@@ -41,13 +41,13 @@ bool fg_start(true);
 #define SIZE_DATA_RECOARD (10)
 #define CONVERG_THROSHOLD (M_PI * 5.0/180.0)
 
-#define TASK_8_LENGTH_FRONT     (0.4)
-#define TASK_10_LENGTH_RIGHT    (0.4)
-#define TASK_13_LENGTH_FRONT    (0.6)
+#define TASK_8_LENGTH_FRONT     (0.5)
+#define TASK_10_LENGTH_RIGHT    (0.45)
+#define TASK_13_LENGTH_FRONT    (0.55)
 #define TASK_13_LENGTH_RIGHT    (0.4)
-#define TASK_15_LENGTH_RIGHT    (0.6)
+#define TASK_15_LENGTH_RIGHT    (0.55)
 
-#define TASK_200_DURATION       (1.0)
+#define TASK_200_DURATION       (1.5)
 #define TASK_201_DURATION       (4.0)
 #define TASK_202_DURATION       (1.5)
 
@@ -329,7 +329,20 @@ void loop_tesk(int _stage, ros::Publisher* _diff_pub, ros::Publisher* _diff_twis
     case 3:
     case 4:
     case 5:
+        cmd_message.data.push_back((uint16_t)DiffModbus::MODE_TRACK_LINE_CMD);
+        cmd_message.data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
+        cmd_message.data.push_back((uint16_t)DiffModbus::WHITE_CMD);
+        cmd_twist.linear.x = 0;
+        cmd_twist.angular.z = 0;
+        break;
     case 6:
+        cmd_message.data.push_back((uint16_t)DiffModbus::MODE_TRACK_LINE_CMD);
+        cmd_message.data.push_back((uint16_t)DiffModbus::TORQUE_HIGH_CMD);
+        cmd_message.data.push_back((uint16_t)DiffModbus::WHITE_CMD);
+        cmd_twist.linear.x = 0;
+        cmd_twist.angular.z = 0;
+        break;
+
     case 7:
 
         cmd_message.data.push_back((uint16_t)DiffModbus::MODE_TRACK_LINE_CMD);
@@ -688,7 +701,7 @@ bool stage_change_detect(int _stage) {
         break;
     case 6:
         // Detect the Orient is cross at 0 degree and Timing from last stage large than 1 sec
-        if(fabs(last_time.toSec() - ros::Time::now().toSec()) > 1.0 && fabs(orient - M_PI * 0.0/180.0) < 0.1) {
+        if(fabs(last_time.toSec() - ros::Time::now().toSec()) > 1.0 && fabs(orient - M_PI * -45.0/180.0) < 0.1) {
             last_time = ros::Time::now();
             return true;
         }
