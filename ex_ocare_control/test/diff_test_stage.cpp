@@ -47,9 +47,13 @@ bool fg_start(true);
 #define TASK_13_LENGTH_RIGHT    (0.4)
 #define TASK_15_LENGTH_RIGHT    (0.6)
 
-#define TASK_200_DURATION       (0.1)
-#define TASK_201_DURATION       (0.4)
-#define TASK_202_DURATION       (0.15)
+#define TASK_200_DURATION       (1.0)
+#define TASK_201_DURATION       (4.0)
+#define TASK_202_DURATION       (1.5)
+
+#define TASK_110_DURATION       (1.5)
+#define TASK_111_DURATION       (1.5)
+#define TASK_112_DURATION       (5)
 
 /************************************************/
 
@@ -221,8 +225,10 @@ int main(int argc, char** argv) {
     while(ros::ok()) {
 
 #ifdef __arm__
-        fg_need_bulb    =  digitalRead(PIN_SW_NEED_BULB_TESK);
-        fg_start        =  digitalRead(PIN_SW_START);
+        //fg_need_bulb    =  digitalRead(PIN_SW_NEED_BULB_TESK);
+        //fg_start        =  digitalRead(PIN_SW_START);
+        fg_need_bulb = true;
+        fg_start = true
 #endif
 
 #ifdef _DEBUG_SENSOR
@@ -765,7 +771,7 @@ bool stage_change_detect(int _stage) {
         break;
     case 110:
         if(fg_usetimer) {
-            if(ros::Time::now().toSec() - last_time.toSec() > 5.0) {
+            if(ros::Time::now().toSec() - last_time.toSec() >  TASK_110_DURATION) {
                 last_time = ros::Time::now();
                 return true;
             }
@@ -775,7 +781,7 @@ bool stage_change_detect(int _stage) {
         break;
     case 111:
         if(fg_usetimer) {
-            if(ros::Time::now().toSec() - last_time.toSec() > 5.0) {
+            if(ros::Time::now().toSec() - last_time.toSec() > TASK_111_DURATION) {
                 last_time = ros::Time::now();
                 return true;
             }
@@ -785,7 +791,7 @@ bool stage_change_detect(int _stage) {
         break;
     case 112:
         if(fg_usetimer) {
-            if(ros::Time::now().toSec() - last_time.toSec() > 5.0) {
+            if(ros::Time::now().toSec() - last_time.toSec() > TASK_112_DURATION) {
                 fg_usetimer = false;
                 last_time = ros::Time::now();
                 return true;
@@ -960,7 +966,7 @@ void do_button_tesk(int _stage, std_msgs::UInt16MultiArray* _mode_msg, geometry_
         _mode_msg->data.push_back((uint16_t)DiffModbus::MODE_CONTROLLABLE_CMD);
         _mode_msg->data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
         _mode_msg->data.push_back((uint16_t)DiffModbus::WHITE_CMD);
-        _twist_msg->linear.x = 40;
+        _twist_msg->linear.x = -30;
         _twist_msg->angular.z = M_PI * 180.0/180.0;
         break;
     case 111:
@@ -981,7 +987,7 @@ void do_button_tesk(int _stage, std_msgs::UInt16MultiArray* _mode_msg, geometry_
         _mode_msg->data.push_back((uint16_t)DiffModbus::MODE_CONTROLLABLE_CMD);
         _mode_msg->data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
         _mode_msg->data.push_back((uint16_t)DiffModbus::WHITE_CMD);
-        _twist_msg->linear.x = 40;
+        _twist_msg->linear.x = 30;
         _twist_msg->angular.z = M_PI * -170/180.0;
         break;
     }
