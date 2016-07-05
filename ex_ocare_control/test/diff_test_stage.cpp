@@ -47,6 +47,10 @@ bool fg_start(true);
 #define TASK_13_LENGTH_RIGHT    (0.4)
 #define TASK_15_LENGTH_RIGHT    (0.6)
 
+#define TASK_200_DURATION       (0.1)
+#define TASK_201_DURATION       (0.4)
+#define TASK_202_DURATION       (0.15)
+
 /************************************************/
 
 /**************** DEBUG Flags ******************/
@@ -380,7 +384,7 @@ void loop_tesk(int _stage, ros::Publisher* _diff_pub, ros::Publisher* _diff_twis
         cmd_message.data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
         cmd_message.data.push_back((uint16_t)DiffModbus::WHITE_CMD);
         cmd_twist.linear.x = 50;
-        cmd_twist.angular.z = 0 - (right_length )*cos(orient) + TASK_13_LENGTH_RIGHT;
+        cmd_twist.angular.z = 0 - (right_length)*cos(orient) + TASK_13_LENGTH_RIGHT  ;
         break;
     case 14:
         cmd_message.data.push_back((uint16_t)DiffModbus::MODE_CONTROLLABLE_CMD);
@@ -906,7 +910,7 @@ bool stage_change_detect(int _stage) {
         return true;
     case 200:
         if(fg_usetimer) {
-            if(ros::Time::now().toSec() - last_time.toSec() > 3.0) {
+            if(ros::Time::now().toSec() - last_time.toSec() > TASK_200_DURATION) {
                 last_time = ros::Time::now();
                 return true;
             }
@@ -916,7 +920,7 @@ bool stage_change_detect(int _stage) {
         break;
     case 201:
         if(fg_usetimer) {
-            if(ros::Time::now().toSec() - last_time.toSec() > 4.0) {
+            if(ros::Time::now().toSec() - last_time.toSec() > TASK_201_DURATION) {
                 last_time = ros::Time::now();
                 return true;
             }
@@ -926,7 +930,7 @@ bool stage_change_detect(int _stage) {
         break;
     case 202:
         if(fg_usetimer) {
-            if(ros::Time::now().toSec() - last_time.toSec() > 1.0) {
+            if(ros::Time::now().toSec() - last_time.toSec() > TASK_202_DURATION) {
                 last_time = ros::Time::now();
                 return true;
             }
@@ -964,7 +968,7 @@ void do_button_tesk(int _stage, std_msgs::UInt16MultiArray* _mode_msg, geometry_
         _mode_msg->data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
         _mode_msg->data.push_back((uint16_t)DiffModbus::WHITE_CMD);
         _twist_msg->linear.x = 0;
-        _twist_msg->angular.z = M_PI * 150.0/180.0;
+        _twist_msg->angular.z = M_PI * 170.0/180.0;
         break;
     case 112:
         _mode_msg->data.push_back((uint16_t)DiffModbus::MODE_CONTROLLABLE_CMD);
