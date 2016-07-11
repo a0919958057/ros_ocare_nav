@@ -6,6 +6,8 @@ project(ex_ocare_control)
 ## is used, also find other catkin packages
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+set(CMAKE_BUILD_TYPE Debug)
+
 
 find_package(catkin REQUIRED COMPONENTS
   control_msgs
