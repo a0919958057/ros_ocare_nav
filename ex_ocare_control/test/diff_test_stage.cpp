@@ -90,6 +90,7 @@ double get_sensor_average();
 bool is_sensor_noline();
 double cot_angle(double _degree);
 
+// The GUI Panel command callback
 void callback_stage_cmd(const std_msgs::Int32ConstPtr &msg) {
     stage = msg->data;
 }
@@ -156,6 +157,9 @@ int main(int argc, char** argv) {
 
     // Create a ros node
     ros::NodeHandle node;
+
+/******************************** Subscriber ********************************/
+
     // Subscribe the laser scan topic
     ros::Subscriber laser_sub =
             node.subscribe<sensor_msgs::LaserScan>("/scan",50,callback_laser);
@@ -164,8 +168,12 @@ int main(int argc, char** argv) {
     ros::Subscriber imu_sub =
             node.subscribe<sensor_msgs::Imu>("/imu",50,callback_imu);
 
+    // Subscribe the tracking line sensor topic
     ros::Subscriber sensor_sub =
             node.subscribe<std_msgs::UInt16MultiArray>("/track_line_sensor",50,callback_sensor);
+
+
+/*****************************************************************************/
 
 /******************************** Publishers ********************************/
     /********** The Diff command Topic Struct for uint16_t array
