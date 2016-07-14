@@ -28,9 +28,11 @@ extern "C" {
 #define PIN_SW_START          (22)
 bool fg_need_bulb(false);
 bool fg_start(false);
+int  fg_mode(-1);
 #else
 bool fg_need_bulb(true);
-bool fg_start(true);
+bool fg_start(false);
+int  fg_mode(-1);
 
 #endif
 
@@ -69,6 +71,14 @@ bool fg_start(true);
 
 /***********************************************/
 
+/**************** Mode Define ******************/
+
+#define MODE_AUTO_START     (1)
+#define MODE_REMOTE_START   (2)
+#define MODE_STOP           (-1)
+
+/***********************************************/
+
 double front_length(10);
 double right_length(10);
 double left_length(10);
@@ -92,7 +102,25 @@ double cot_angle(double _degree);
 
 // The GUI Panel command callback
 void callback_stage_cmd(const std_msgs::Int32ConstPtr &msg) {
+
     stage = msg->data;
+}
+
+void callback_control(const std_msgs::Int32ConstPtr &msg) {
+
+    // Register the GUI controll MSG
+    fg_mode = msg->data;
+    switch(msg->data) {
+    case MODE_AUTO_START:
+    case MODE_REMOTE_START:
+        fg_start = true;
+        break;
+    case MODE_STOP:
+    default:
+        fg_start = false;
+        break;
+
+    }
 }
 
 void callback_laser(const sensor_msgs::LaserScanConstPtr &msg) {
@@ -162,15 +190,23 @@ int main(int argc, char** argv) {
 
     // Subscribe the laser scan topic
     ros::Subscriber laser_sub =
-            node.subscribe<sensor_msgs::LaserScan>("/scan",50,callback_laser);
+            node.subscribe<sensor_msgs::LaserScan>("/scan", 50, callback_laser);
 
     // Subscribe the IMU topic
     ros::Subscriber imu_sub =
-            node.subscribe<sensor_msgs::Imu>("/imu",50,callback_imu);
+            node.subscribe<sensor_msgs::Imu>("/imu", 50, callback_imu);
 
     // Subscribe the tracking line sensor topic
     ros::Subscriber sensor_sub =
-            node.subscribe<std_msgs::UInt16MultiArray>("/track_line_sensor",50,callback_sensor);
+            node.subscribe<std_msgs::UInt16MultiArray>("/track_line_sensor", 50, callback_sensor);
+
+    // Subscribe the stage cmd topic
+    ros::Subscriber stage_sub =
+            node.subscribe<std_msgs::Int32>("/stage_set_cmd", 10, callback_stage_cmd);
+
+    // Subscribe the cmd topic for this stage controller
+    ros::Subscriber control_sub =
+            node.subscribe<std_msgs::Int32>("/diff_mode_controller_cmd", 10, callback_control);
 
 
 /*****************************************************************************/
@@ -204,7 +240,7 @@ int main(int argc, char** argv) {
 
     // Create a publish that publish the differential wheel Mode
     ros::Publisher diff_pub =
-            node.advertise<std_msgs::UInt16MultiArray>("/diff_mode_cmd",50);
+            node.advertise<std_msgs::UInt16MultiArray>("/diff_mode_cmd", 50);
 
     /******Defination of the Chassis Torque CMD
      * Linear.x :            The forward speed CMD
@@ -213,7 +249,11 @@ int main(int argc, char** argv) {
 
     // Create a publish that publish the differential wheel Torque CMD
     ros::Publisher diff_twist_pub =
-            node.advertise<geometry_msgs::Twist>("/ocare/pose_fuzzy_controller/diff_cmd",50);
+            node.advertise<geometry_msgs::Twist>("/ocare/pose_fuzzy_controller/diff_cmd", 50);
+
+    // Create a publish that publish the Stage mode to GUI panel
+    ros::Publisher stage_pub =
+            node.advertise<std_msgs::Int32>("/stage_mode", 50);
 
 
 /*****************************************************************************/
@@ -223,12 +263,12 @@ int main(int argc, char** argv) {
 
 
 
-    printf("Which stage to start?(0~20) \n");
-    scanf("%d", &stage);
-    if(stage < 0 || stage > 21) {
-        printf("Parameter error, Start at stage 0");
-        stage = 0;
-    }
+//    printf("Which stage to start?(0~20) \n");
+//    scanf("%d", &stage);
+//    if(stage < 0 || stage > 21) {
+//        printf("Parameter error, Start at stage 0");
+//        stage = 0;
+//    }
 
     while(ros::ok()) {
 
@@ -258,37 +298,82 @@ int main(int argc, char** argv) {
                 sensor_value[12]);
 
 #else
-        // Makesure every sensor topic is ready.
-        if( sensor_ready && imu_ready && laser_ready ) {
-            // Do the current stage tesk
-            loop_tesk(stage, &diff_pub, &diff_twist_pub);
+        if(fg_start) {
 
-            // Detect the stage change
-            if(stage == 11 && fg_need_bulb) {   // If Need Bulb tesk and stage is 11, then Change stage to Bulk tesk
-                if(stage_change_detect(stage)) stage = 110;
-            }
-            else if( stage >= 110 && stage <=113) {
-                if(stage_change_detect(stage)) stage++;
-                if(stage == 114) stage = 12;
-            }
-            else if (stage == 20) {
-                if(stage_change_detect(stage)) stage = 200;
-            }
-            else if( stage >= 200 && stage <=202) {
-                if(stage_change_detect(stage)) stage++;
-                if(stage == 203) stage = 21;
-            }
-            else {
+            // Makesure every sensor topic is ready.
+            if( sensor_ready && imu_ready && laser_ready ) {
 
-                if(stage_change_detect(stage)) {
-                    ROS_INFO("STAGE CHANGE");
-                    stage++;
+                if( fg_mode == MODE_AUTO_START) {
+
+                    // Do the current stage tesk
+                    loop_tesk(stage, &diff_pub, &diff_twist_pub);
+
+                    // Detect the stage change
+                    if(stage == 11 && fg_need_bulb) {   // If Need Bulb tesk and stage is 11, then Change stage to Bulk tesk
+                        if(stage_change_detect(stage)) stage = 110;
+                    }
+                    else if( stage >= 110 && stage <=113) {
+                        if(stage_change_detect(stage)) stage++;
+                        if(stage == 114) stage = 12;
+                    }
+                    else if (stage == 20) {
+                        if(stage_change_detect(stage)) stage = 200;
+                    }
+                    else if( stage >= 200 && stage <=202) {
+                        if(stage_change_detect(stage)) stage++;
+                        if(stage == 203) stage = 21;
+                    }
+                    else {
+
+                        if(stage_change_detect(stage)) {
+                            ROS_INFO("STAGE CHANGE");
+                            stage++;
+                        }
+                    }
                 }
+                else if (fg_mode == MODE_REMOTE_START) {
+
+                    // The chassic's Mode CMD message
+                    std_msgs::UInt16MultiArray cmd_message;
+
+                    cmd_message.data.clear();
+                    cmd_message.data.push_back((uint16_t)DiffModbus::MODE_CONTROLLABLE_CMD);
+                    cmd_message.data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
+                    cmd_message.data.push_back((uint16_t)DiffModbus::WHITE_CMD);
+
+                    // Publish the topic
+                    diff_pub.publish(cmd_message);
+
+                    // NOTE: the twist command will be sended by another node
+                }
+
             }
+
         }
+        else {
+            // The chassic's Mode CMD message
+            std_msgs::UInt16MultiArray cmd_message;
+            // The differential wheel Torque CMD message
+            geometry_msgs::Twist cmd_twist;
+
+            cmd_message.data.clear();
+            cmd_message.data.push_back((uint16_t)DiffModbus::MODE_STOP_CMD);
+            cmd_message.data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
+            cmd_message.data.push_back((uint16_t)DiffModbus::WHITE_CMD);
+            cmd_twist.linear.x = 0;
+            cmd_twist.angular.z = 0;
+
+            // Publish the topic
+            diff_pub.publish(cmd_message);
+            diff_twist_pub.publish(cmd_twist);
+        }
+
 #endif
 
-
+        // Report the current stage to GUI
+        std_msgs::Int32 stage_msg;
+        stage_msg.data = stage;
+        stage_pub.publish(stage_msg);
 
 
         // Sleep for a while
