@@ -1120,7 +1120,7 @@ border: 1px solid black;
         <x>10</x>
         <y>30</y>
         <width>321</width>
-        <height>131</height>
+        <height>91</height>
        </rect>
       </property>
       <layout class="QGridLayout" name="gridLayout_2">
@@ -1243,11 +1243,24 @@ border: 1px solid black;
           </font>
          </property>
          <property name="text">
-          <string>Line Sensor -  track_line_sensor</string>
+          <string>Line Sensor -  /track_line_sensor</string>
          </property>
         </widget>
        </item>
       </layout>
+     </widget>
+     <widget class="QPushButton" name="refreshTopicStatus">
+      <property name="geometry">
+       <rect>
+        <x>240</x>
+        <y>130</y>
+        <width>96</width>
+        <height>27</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Refresh</string>
+      </property>
      </widget>
     </widget>
    </widget>

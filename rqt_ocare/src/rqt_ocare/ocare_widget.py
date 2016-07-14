@@ -19,7 +19,6 @@ from sensor_msgs.msg import Imu, LaserScan
 
 
 class OcareWidget(QWidget):
-    set_status_text = Signal(str)
 
     def __init__(self, context):
         super(OcareWidget, self).__init__()
@@ -49,6 +48,11 @@ class OcareWidget(QWidget):
         self._setup_subscriber()
         self._setup_callback()
         self._setup_graph()
+
+        self.connect(self, SIGNAL('updateSensor'), self._update_sensor)
+        self.connect(self, SIGNAL('updateIMU'), self._update_imu)
+        self.connect(self, SIGNAL('updateSensorStatus'), self._update_status)
+        self.connect(self, SIGNAL('updateStage'), self._update_stage)
 
         self._orient = 0
         self._num = 0
@@ -89,6 +93,7 @@ class OcareWidget(QWidget):
         self.num_enter.clicked[bool].connect(self._handle_num_enter)
         self.checkBoxArmOpen.toggled.connect(self._handle_arm_open)
         self.orientReset.clicked[bool].connect(self._handle_reset_orent_clicked)
+        self.refreshTopicStatus.clicked[bool].connect(self._handle_refresh_clicked)
 
     def _setup_graph(self):
         path = os.path.join(self.rp.get_path('rqt_ocare'), 'resource', 'compass.png')
@@ -121,7 +126,9 @@ class OcareWidget(QWidget):
 
         self._orient = y
         self._is_imu_ready = True
-        self.update()
+        self.emit(SIGNAL("updateIMU"))
+        self.emit(SIGNAL("updateSensorStatus"))
+        # self.update()
 
     def callback_track_sensor(self, msg):
 
@@ -129,15 +136,20 @@ class OcareWidget(QWidget):
 
         :type msg:UInt16MultiArray
         """
+
         for i in range(0,13):
             self._sensor_value[i] = (100 - msg.data[i])
 
         self._is_line_sensor_ready = True
-        self.update()
+
+        self.emit(SIGNAL("updateSensor"))
+        self.emit(SIGNAL("updateSensorStatus"))
+        # self.update()
 
 
     def callback_lrf(self, msg):
         self._is_lrf_ready = True
+        self.emit(SIGNAL("updateSensorStatus"))
 
     def callback_stage(self, msg):
         """
@@ -145,22 +157,27 @@ class OcareWidget(QWidget):
         :type msg:Int32
         """
         self._current_stage = msg.data
+        self.emit(SIGNAL("updateStage"))
 
     #def callback_stage(self, msg):
 
-
-    def paintEvent(self, event):
-
-        self._set_icon_radian(self._orient)
-        self.lcdNumberOrient.display(self._orient*180/3.1415926)
+    def _update_sensor(self):
         for i in range(0,13):
             self.progressBarList[i].setValue(self._sensor_value[i])
 
+    def _update_imu(self):
+        self._set_icon_radian(self._orient)
+        self.lcdNumberOrient.display(self._orient*180/3.1415926)
+
+    def _update_status(self):
         self.statusLRF.setChecked(self._is_lrf_ready)
         self.statusIMU.setChecked(self._is_imu_ready)
         self.statusLS.setChecked(self._is_line_sensor_ready)
+
+    def _update_stage(self):
         self.lcdNumberDiffMode_2.display(self._current_stage)
 
+    # def paintEvent(self, event):
 
     def _handle_start_clicked(self):
         # 1 is start
@@ -189,12 +206,19 @@ class OcareWidget(QWidget):
     def _handle_num_enter(self):
         current_num = self.lcdNumberDiffMode.intValue()
         self._stage_pub.publish(current_num)
+        self.lcdNumberDiffMode.display(0)
 
     def _handle_arm_open(self):
         if self.checkBoxArmOpen.isChecked():
             self.lcdNumberDiffMode_2.display('1')
         else:
             self.lcdNumberDiffMode_2.display('2')
+
+    def _handle_refresh_clicked(self):
+        self._is_imu_ready = False
+        self._is_lrf_ready = False
+        self._is_line_sensor_ready = False
+        self.emit(SIGNAL("updateSensorStatus"))
 
     def _set_icon_radian(self, radian):
         q = QTransform()
