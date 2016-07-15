@@ -165,6 +165,19 @@ class OcareWidget(QWidget):
         for i in range(0,13):
             self.progressBarList[i].setValue(self._sensor_value[i])
 
+        weight_sum = 0.0
+        for (weight, i) in zip(range(-6,7),range(0,13)):
+            weight_sum = weight_sum + float(weight) * float(self._sensor_value[i])
+        self.sliderBK.setValue(weight_sum*100 / (sum(self._sensor_value)+1))
+
+        sensor_wh_value = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        for i in range(0, 13):
+            sensor_wh_value[i] = 100.0 - self._sensor_value[i]
+        weight_sum = 0.0
+        for (weight, i) in zip(range(-6,7),range(0,13)):
+            weight_sum = weight_sum + float(weight) * float(sensor_wh_value[i])
+        self.sliderWH.setValue(weight_sum*100 / (sum(sensor_wh_value)+1))
+
     def _update_imu(self):
         self._set_icon_radian(self._orient)
         self.lcdNumberOrient.display(self._orient*180/3.1415926)
