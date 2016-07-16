@@ -100,10 +100,183 @@ double get_sensor_average();
 bool is_sensor_noline();
 double cot_angle(double _degree);
 
+class ConvergDetector {
+public:
+    ConvergDetector() :
+        index_counter(0),
+        fg_inited(false),
+        fg_started(false),
+        ref_data(0.0) {}
+
+    ~ConvergDetector() {}
+
+private:
+
+    // Flag for Detector status
+    bool fg_inited;
+    bool fg_started;
+    int index_counter;
+
+    // Detector registers
+    double ref_data;
+    double data_recoard[SIZE_DATA_RECOARD];
+public:
+    // Need init first
+    void init(double _ref) {
+        fg_inited = true;
+        ref_data = _ref;
+        for(int i=0;i<SIZE_DATA_RECOARD;i++) {
+            data_recoard[i] = 10.0;
+        }
+    }
+
+    bool start() {
+        if(fg_inited) {
+            fg_started = true;
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    void stop() {
+        fg_started = false;
+        fg_inited = false;
+    }
+
+    void update() {
+        if(fg_started) {
+            data_recoard[index_counter] = cot_angle(fabs(ref_data - orient));
+            index_counter++;
+            if(index_counter == SIZE_DATA_RECOARD) index_counter = 0;
+            ROS_INFO_NAMED("ConvergDetector", "Debug : Error= %f ,ref_data = %f,orient = %f",
+                           fabs(ref_data - orient),ref_data,orient);
+        }
+        else {
+            ROS_ERROR_NAMED("ConvergDetector", "Need start first!");
+        }
+    }
+
+    bool isConverged() {
+
+        if(fg_started) {
+            double sum(0);
+            double avg(0);
+            for(int i=0;i<SIZE_DATA_RECOARD;i++) {
+                sum += data_recoard[i];
+            }
+            avg = sum / SIZE_DATA_RECOARD;
+            ROS_INFO_NAMED("ConvergDetector", "Debug : Avg = %f ",avg);
+            return (CONVERG_THROSHOLD > avg);
+
+        }
+
+        else {
+            ROS_ERROR_NAMED("ConvergDetector", "Need start first!");
+            return false;
+        }
+
+    }
+
+    bool isStarted() {
+        return fg_started;
+    }
+};
+
+class WBDetector {
+public:
+    WBDetector() :
+        fg_inited(false),
+        fg_started(false) {}
+
+    ~WBDetector() {}
+
+private:
+
+    // Flag for Detector status
+    bool fg_inited;
+    bool fg_started;
+    bool fg_w2b;
+
+    int head;
+    int w_detected;
+    int b_detected;
+
+public:
+    // Need init first
+    void init(bool _is_w2b) {
+        fg_w2b = _is_w2b;
+        head = 0;
+        w_detected = -1;
+        b_detected = -1;
+        fg_inited = true;
+    }
+
+    bool start() {
+        if(fg_inited) {
+            fg_started = true;
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    void stop() {
+        fg_started = false;
+        fg_inited = false;
+    }
+
+    void update() {
+        ROS_DEBUG_NAMED("WBDetector", "w_detected:%d, b_detected:%d, sensor AVG: %f",
+                        w_detected, b_detected, get_sensor_average());
+        if(fg_started) {
+            if( get_sensor_average() > 70.0 && b_detected < 0)
+                b_detected = head ++;
+            if( get_sensor_average() < 30.0 && w_detected < 0)
+                w_detected = head ++;
+        }
+        else {
+            ROS_ERROR_NAMED("WBDetector", "Need start first!");
+        }
+    }
+
+    bool isDetected() {
+        if(fg_started) {
+            if(b_detected < 0 || w_detected < 0) {
+                return false;
+            }
+            else {
+                if(fg_w2b)
+                    return b_detected > w_detected;
+                else
+                    return w_detected > b_detected;
+            }
+        }
+        else {
+            ROS_ERROR_NAMED("WBDetector", "Need start first!");
+            return false;
+        }
+
+    }
+
+    bool isStarted() {
+        return fg_started;
+    }
+};
+
+ConvergDetector stable_detector;
+WBDetector wb_detector;
+
 // The GUI Panel command callback
 void callback_stage_cmd(const std_msgs::Int32ConstPtr &msg) {
 
     stage = msg->data;
+
+    // Reset Stage Detector
+    stable_detector.stop();
+    wb_detector.stop();
 }
 
 void callback_control(const std_msgs::Int32ConstPtr &msg) {
@@ -561,181 +734,11 @@ void loop_tesk(int _stage, ros::Publisher* _diff_pub, ros::Publisher* _diff_twis
     _diff_twist_pub->publish(cmd_twist);
 }
 
-class ConvergDetector {
-public:
-    ConvergDetector() :
-        index_counter(0),
-        fg_inited(false),
-        fg_started(false),
-        ref_data(0.0) {}
-
-    ~ConvergDetector() {}
-
-private:
-
-    // Flag for Detector status
-    bool fg_inited;
-    bool fg_started;
-    int index_counter;
-
-    // Detector registers
-    double ref_data;
-    double data_recoard[SIZE_DATA_RECOARD];
-public:
-    // Need init first
-    void init(double _ref) {
-        fg_inited = true;
-        ref_data = _ref;
-        for(int i=0;i<SIZE_DATA_RECOARD;i++) {
-            data_recoard[i] = 10.0;
-        }
-    }
-
-    bool start() {
-        if(fg_inited) {
-            fg_started = true;
-            return true;
-        }
-        else {
-            return false;
-        }
-    }
-
-    void stop() {
-        fg_started = false;
-        fg_inited = false;
-    }
-
-    void update() {
-        if(fg_started) {
-            data_recoard[index_counter] = cot_angle(fabs(ref_data - orient));
-            index_counter++;
-            if(index_counter == SIZE_DATA_RECOARD) index_counter = 0;
-            ROS_INFO_NAMED("ConvergDetector", "Debug : Error= %f ,ref_data = %f,orient = %f",
-                           fabs(ref_data - orient),ref_data,orient);
-        }
-        else {
-            ROS_ERROR_NAMED("ConvergDetector", "Need start first!");
-        }
-    }
-
-    bool isConverged() {
-
-        if(fg_started) {
-            double sum(0);
-            double avg(0);
-            for(int i=0;i<SIZE_DATA_RECOARD;i++) {
-                sum += data_recoard[i];
-            }
-            avg = sum / SIZE_DATA_RECOARD;
-            ROS_INFO_NAMED("ConvergDetector", "Debug : Avg = %f ",avg);
-            return (CONVERG_THROSHOLD > avg);
-
-        }
-
-        else {
-            ROS_ERROR_NAMED("ConvergDetector", "Need start first!");
-            return false;
-        }
-
-    }
-
-    bool isStarted() {
-        return fg_started;
-    }
-};
-
-class WBDetector {
-public:
-    WBDetector() :
-        fg_inited(false),
-        fg_started(false) {}
-
-    ~WBDetector() {}
-
-private:
-
-    // Flag for Detector status
-    bool fg_inited;
-    bool fg_started;
-    bool fg_w2b;
-
-    int head;
-    int w_detected;
-    int b_detected;
-
-public:
-    // Need init first
-    void init(bool _is_w2b) {
-        fg_w2b = _is_w2b;
-        head = 0;
-        w_detected = -1;
-        b_detected = -1;
-        fg_inited = true;
-    }
-
-    bool start() {
-        if(fg_inited) {
-            fg_started = true;
-            return true;
-        }
-        else {
-            return false;
-        }
-    }
-
-    void stop() {
-        fg_started = false;
-        fg_inited = false;
-    }
-
-    void update() {
-        ROS_DEBUG_NAMED("WBDetector", "w_detected:%d, b_detected:%d, sensor AVG: %f",
-                        w_detected, b_detected, get_sensor_average());
-        if(fg_started) {
-            if( get_sensor_average() > 70.0 && b_detected < 0)
-                b_detected = head ++;
-            if( get_sensor_average() < 30.0 && w_detected < 0)
-                w_detected = head ++;
-        }
-        else {
-            ROS_ERROR_NAMED("WBDetector", "Need start first!");
-        }
-    }
-
-    bool isDetected() {
-        if(fg_started) {
-            if(b_detected < 0 || w_detected < 0) {
-                return false;
-            }
-            else {
-                if(fg_w2b)
-                    return b_detected > w_detected;
-                else
-                    return w_detected > b_detected;
-            }
-        }
-        else {
-            ROS_ERROR_NAMED("WBDetector", "Need start first!");
-            return false;
-        }
-
-    }
-
-    bool isStarted() {
-        return fg_started;
-    }
-};
-
-
 bool stage_change_detect(int _stage) {
     // Count the times of robot distence over minimum limit
     static int laser_distence_overlimit_conter(0);
     static bool fg_usetimer(false);
     static ros::Time last_time = ros::Time::now();
-    static ConvergDetector stable_detector;
-    static WBDetector wb_detector;
-
 
     switch(_stage) {
     case 0:
