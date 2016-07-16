@@ -276,7 +276,6 @@ int main(int argc, char** argv) {
         //fg_need_bulb    =  digitalRead(PIN_SW_NEED_BULB_TESK);
         //fg_start        =  digitalRead(PIN_SW_START);
         fg_need_bulb = true;
-        fg_start = true;
 #endif
 
 #ifdef _DEBUG_SENSOR
