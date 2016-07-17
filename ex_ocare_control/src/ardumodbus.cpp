@@ -74,7 +74,11 @@ bool ArduModbus::connect_slave() {
 #endif
                 modbus_free(m_ctx);
                 result = false;
+                break;
+
             } else {
+
+                ROS_INFO("Modbus Connection Successful: %s\n", _hw->m_name);
                 modbus_flush(m_ctx);
             }
         }
@@ -133,7 +137,7 @@ bool ArduModbus::write() {
 
         if(!_hw->write()) {
 #ifdef _ROS
-        ROS_ERROR("HWModule Write: HWModule %s can not write! \n", _hw->m_name);
+        ROS_ERROR("HWModule Write: HWModule \"%s\" can not write! \n", _hw->m_name);
 #else
         fprintf(stderr, "HWModule Write: HWModule can not write! \n", _hw->m_name);
 #endif
@@ -165,7 +169,7 @@ bool ArduModbus::read() {
 
         if(!_hw->read()) {
 #ifdef _ROS
-        ROS_ERROR("HWModule Read: HWModule %s can not read! \n", _hw->m_name);
+        ROS_ERROR("HWModule Read: HWModule \"%s\" can not read! \n", _hw->m_name);
 #else
         fprintf(stderr, "HWModule Read: HWModule %s can not read! \n", _hw->m_name);
 #endif

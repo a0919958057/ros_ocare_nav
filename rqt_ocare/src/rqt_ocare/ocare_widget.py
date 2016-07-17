@@ -67,6 +67,7 @@ class OcareWidget(QWidget):
         self._pub = rospy.Publisher('chatter', String, queue_size=10)
         self._stage_pub = rospy.Publisher('stage_set_cmd', Int32, queue_size=10)
         self._control_pub = rospy.Publisher('diff_mode_controller_cmd', Int32, queue_size=10)
+        self._arm_mode_pub = rospy.Publisher('arm_mode_controller_cmd', Int32, queue_size=10)
 
     def _setup_subscriber(self):
         self._imu_sub = rospy.Subscriber('/imu', Imu, self.callback_imu)

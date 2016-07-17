@@ -112,9 +112,11 @@ void OcareRobot::init(ros::NodeHandle* _node) {
 
     // Initial the modbus
     m_modbus.init("/dev/ttyUSB0",115200,2,'N');
-    //m_modbus.registerHWModule(&m_arm);
+
 
     m_modbus.registerHWModule(&m_diff);
+    m_modbus.registerHWModule(&m_arm);
+
     m_modbus.connect_slave();
 }
 
