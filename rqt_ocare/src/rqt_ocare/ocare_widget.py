@@ -20,6 +20,18 @@ from sensor_msgs.msg import Imu, LaserScan
 
 class OcareWidget(QWidget):
 
+    # DiffMode
+    MODE_AUTO_START = 1
+    MODE_REMOTE_START = 2
+    MODE_STOP = -1
+
+    # Arm Mode
+    MODE_ARM_SLIDER_HOME = -1
+    MODE_ARM_SLIDER_OPEN = 1
+    MODE_ARM_HOME_POSE = -2
+    MODE_ARM_BTN_POSE = 2
+    MODE_ARM_FREE_CONTROL = 3
+
     def __init__(self, context):
         super(OcareWidget, self).__init__()
         self.rp = rospkg.RosPack()
@@ -78,18 +90,19 @@ class OcareWidget(QWidget):
 
     def _setup_callback(self):
         self.pushButtonStart.clicked[bool].connect(self._handle_start_clicked)
-        self.buttonGroup = QButtonGroup()
-        self.buttonGroup.addButton(self.num_0, 0)
-        self.buttonGroup.addButton(self.num_1, 1)
-        self.buttonGroup.addButton(self.num_2, 2)
-        self.buttonGroup.addButton(self.num_3, 3)
-        self.buttonGroup.addButton(self.num_4, 4)
-        self.buttonGroup.addButton(self.num_5, 5)
-        self.buttonGroup.addButton(self.num_6, 6)
-        self.buttonGroup.addButton(self.num_7, 7)
-        self.buttonGroup.addButton(self.num_8, 8)
-        self.buttonGroup.addButton(self.num_9, 9)
-        self.buttonGroup.buttonClicked[int].connect(self._handle_num)
+        self.numGroup = QButtonGroup()
+        self.numGroup.addButton(self.num_0, 0)
+        self.numGroup.addButton(self.num_1, 1)
+        self.numGroup.addButton(self.num_2, 2)
+        self.numGroup.addButton(self.num_3, 3)
+        self.numGroup.addButton(self.num_4, 4)
+        self.numGroup.addButton(self.num_5, 5)
+        self.numGroup.addButton(self.num_6, 6)
+        self.numGroup.addButton(self.num_7, 7)
+        self.numGroup.addButton(self.num_8, 8)
+        self.numGroup.addButton(self.num_9, 9)
+        self.numGroup.buttonClicked[int].connect(self._handle_num)
+        self.buttonGroup.buttonClicked.connect(self._handle_arm_mode)
         self.num_clear.clicked[bool].connect(self._handle_num_clear)
         self.num_enter.clicked[bool].connect(self._handle_num_enter)
         self.checkBoxArmOpen.toggled.connect(self._handle_arm_open)
@@ -198,11 +211,11 @@ class OcareWidget(QWidget):
         # -1 is stop
         if self.pushButtonStart.isChecked():
             if self.btnModeAuto.isChecked():
-                self._control_pub.publish(1)
+                self._control_pub.publish(self.MODE_AUTO_START)
             elif self.btnModeRemote.isChecked():
-                self._control_pub.publish(2)
+                self._control_pub.publish(self.MODE_REMOTE_START)
         else:
-            self._control_pub.publish(-1)
+            self._control_pub.publish(self.MODE_STOP)
 
 
     def _handle_reset_orent_clicked(self):
@@ -223,10 +236,24 @@ class OcareWidget(QWidget):
         self.lcdNumberDiffMode.display(0)
 
     def _handle_arm_open(self):
+        msg = Int32()
         if self.checkBoxArmOpen.isChecked():
-            self.lcdNumberDiffMode_2.display('1')
+            msg.data = self.MODE_ARM_SLIDER_OPEN
         else:
-            self.lcdNumberDiffMode_2.display('2')
+            msg.data = self.MODE_ARM_SLIDER_HOME
+
+        self._arm_mode_pub.publish(msg)
+
+    def _handle_arm_mode(self):
+        msg = Int32()
+        if self.btnModeHP.isChecked():
+            msg.data = self.MODE_ARM_HOME_POSE
+        elif self.btnModeBP.isChecked():
+            msg.data = self.MODE_ARM_BTN_POSE
+        elif self.btnModeFC.isChecked():
+            msg.data = self.MODE_ARM_FREE_CONTROL
+
+        self._arm_mode_pub.publish(msg)
 
     def _handle_refresh_clicked(self):
         self._is_imu_ready = False

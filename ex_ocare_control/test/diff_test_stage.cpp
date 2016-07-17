@@ -73,9 +73,17 @@ int  fg_mode(-1);
 
 /**************** Mode Define ******************/
 
+// Diff Mode
 #define MODE_AUTO_START     (1)
 #define MODE_REMOTE_START   (2)
 #define MODE_STOP           (-1)
+
+// Arm Mode
+#define MODE_ARM_SLIDER_HOME        (-1)
+#define MODE_ARM_SLIDER_OPEN        (1)
+#define MODE_ARM_HOME_POSE          (-2)
+#define MODE_ARM_BTN_POSE           (2)
+#define MODE_ARM_FREE_CONTROL       (3)
 
 /***********************************************/
 
@@ -85,6 +93,10 @@ double left_length(10);
 
 double orient(0);
 int stage(0);
+
+uint16_t arm_mode = ArmModbus::ArmModeCMD::ARM_HOME_CMD;
+uint16_t slider_mode = ArmModbus::SliderStateCMD::SLIDER_CLOSE_CMD;
+uint16_t catch_level = 0;
 
 bool sensor_ready(false);
 bool imu_ready(false);
@@ -279,6 +291,29 @@ void callback_stage_cmd(const std_msgs::Int32ConstPtr &msg) {
     wb_detector.stop();
 }
 
+void callback_arm_cmd(const std_msgs::Int32ConstPtr &msg) {
+
+    switch(msg->data) {
+    case MODE_ARM_SLIDER_HOME:
+        slider_mode = ArmModbus::SliderStateCMD::SLIDER_CLOSE_CMD;
+        break;
+    case MODE_ARM_SLIDER_OPEN:
+        slider_mode = ArmModbus::SliderStateCMD::SLIDER_OPEN_CMD;
+        break;
+    case MODE_ARM_HOME_POSE:
+        arm_mode = ArmModbus::ArmModeCMD::ARM_HOME_CMD;
+        break;
+    case MODE_ARM_BTN_POSE:
+        arm_mode = ArmModbus::ArmModeCMD::ARM_BUTTON_POSE_CMD;
+        break;
+    case MODE_ARM_FREE_CONTROL:
+        arm_mode = ArmModbus::ArmModeCMD::ARM_FREE_CONTROLL_CMD;
+        break;
+
+    }
+
+}
+
 void callback_control(const std_msgs::Int32ConstPtr &msg) {
 
     // Register the GUI controll MSG
@@ -330,20 +365,6 @@ void callback_sensor(const std_msgs::UInt16MultiArrayConstPtr &msg) {
     }
     sensor_ready = true;
 
-    ROS_DEBUG_NAMED("SensorCallback","%3d,%3d,%3d,%3d,%3d,%3d,%3d,%3d,%3d,%3d,%3d,%3d,%3d",
-            sensor_value[0],
-            sensor_value[1],
-            sensor_value[2],
-            sensor_value[3],
-            sensor_value[4],
-            sensor_value[5],
-            sensor_value[6],
-            sensor_value[7],
-            sensor_value[8],
-            sensor_value[9],
-            sensor_value[10],
-            sensor_value[11],
-            sensor_value[12]);
 }
 
 int main(int argc, char** argv) {
@@ -381,6 +402,11 @@ int main(int argc, char** argv) {
     ros::Subscriber control_sub =
             node.subscribe<std_msgs::Int32>("/diff_mode_controller_cmd", 10, callback_control);
 
+    // Subscribe the arm cmd topic from GUI interface
+    ros::Subscriber arm_control_sub =
+            node.subscribe<std_msgs::Int32>("/arm_mode_controller_cmd", 10, callback_arm_cmd);
+
+
 
 /*****************************************************************************/
 
@@ -415,6 +441,36 @@ int main(int argc, char** argv) {
     ros::Publisher diff_pub =
             node.advertise<std_msgs::UInt16MultiArray>("/diff_mode_cmd", 50);
 
+    /********** The Arm command Topic Struct for uint16_t array
+    *  enum ArmTopicCMD {
+    *     ARM_MODE_CMD,
+    *     SLIDER_MODE_CMD,
+    *     EFFORT_CATCH_LEVEL_CMD
+    *  };
+    ***************************************************************/
+
+
+    /******Defination of the Arm Mode Command
+     * ARM_HOME_CMD :           Arm go to Home position
+     * ARM_BUTTON_POSE_CMD:     Arm go to push button pose
+     * ARM_FREE_CONTROLL_CMD:   Arm go to motor controllable state,
+     *                          let arm can be controll by ROS.
+     * **************************/
+
+    /******Defination of the Slider Command
+     * SLIDER_OPEN_CMD :           Open the slider to the right position
+     * SLIDER_CLOSE_CMD:           Close the slider to the home position
+     * **************************/
+
+    /******Defination of the catch level
+     * 0 :               Catch full open
+     * 100:              Catch full close
+     * **************************/
+
+    // Create a publish that publish the Arm mode cmd to HWModule node
+    ros::Publisher arm_cmd_pub =
+            node.advertise<std_msgs::UInt16MultiArray>("/arm_mode_cmd", 50);
+
     /******Defination of the Chassis Torque CMD
      * Linear.x :            The forward speed CMD
      * Angular.z:            The Orient CMD
@@ -427,6 +483,8 @@ int main(int argc, char** argv) {
     // Create a publish that publish the Stage mode to GUI panel
     ros::Publisher stage_pub =
             node.advertise<std_msgs::Int32>("/stage_mode", 50);
+
+
 
 
 /*****************************************************************************/
@@ -546,6 +604,15 @@ int main(int argc, char** argv) {
         std_msgs::Int32 stage_msg;
         stage_msg.data = stage;
         stage_pub.publish(stage_msg);
+
+        // Send the arm command to HWModule modbus interface node
+        std_msgs::UInt16MultiArray arm_cmd_msg;
+        arm_cmd_msg.data.clear();
+        arm_cmd_msg.data.push_back(arm_mode);
+        arm_cmd_msg.data.push_back(slider_mode);
+        arm_cmd_msg.data.push_back(catch_level);
+
+        arm_cmd_pub.publish(arm_cmd_msg);
 
 
         // Sleep for a while
