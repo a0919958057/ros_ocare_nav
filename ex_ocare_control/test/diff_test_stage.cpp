@@ -314,6 +314,17 @@ void callback_arm_cmd(const std_msgs::Int32ConstPtr &msg) {
 
 }
 
+void callback_arm_catch(const std_msgs::Int32ConstPtr &msg) {
+
+    int a_catch_level = msg->data;
+    if( a_catch_level > 100) a_catch_level = 100;
+    else if( a_catch_level < 0 ) a_catch_level = 0;
+
+    catch_level = a_catch_level;
+
+}
+
+
 void callback_control(const std_msgs::Int32ConstPtr &msg) {
 
     // Register the GUI controll MSG
@@ -405,6 +416,10 @@ int main(int argc, char** argv) {
     // Subscribe the arm cmd topic from GUI interface
     ros::Subscriber arm_control_sub =
             node.subscribe<std_msgs::Int32>("/arm_mode_controller_cmd", 10, callback_arm_cmd);
+
+    // subscriber for arm catch level command
+    ros::Subscriber m_sub_catch_command =
+            node.subscribe("/arm_catch_level", 50, callback_arm_catch);
 
 
 

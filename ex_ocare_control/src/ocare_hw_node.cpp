@@ -239,7 +239,7 @@ void OcareRobot::command_callback(
     // TODO: get TrajectoryPoint and set the value to Class
 
     if(referencePoint->positions.size() != 2) {
-        ROS_ERROR("FuzzyController::command_callback positions.size error");
+        ROS_ERROR("OcareRobot::command_callback positions.size error: %d", referencePoint->positions.size());
         return;
     }
 
@@ -250,6 +250,7 @@ void OcareRobot::command_callback(
     m_arm2_pos = pos_[1];
 
 }
+
 
 /********************* Variable mapping
  *
@@ -344,7 +345,10 @@ void OcareRobot::write(ros::Time time, ros::Duration period) {
     else {
 
         new_arm1_pos =
-                RIGHT_MOTOR1_MIN_DEG_VALUE + (m_arm1_pos-RIGHT_MOTOR1_MIN_DEG) * (RIGHT_MOTOR1_MAX_DEG_VALUE - RIGHT_MOTOR1_MIN_DEG_VALUE);
+                RIGHT_MOTOR1_MIN_DEG_VALUE +
+                (m_arm1_pos-RIGHT_MOTOR1_MIN_DEG) *
+                (RIGHT_MOTOR1_MAX_DEG_VALUE - RIGHT_MOTOR1_MIN_DEG_VALUE) /
+                (RIGHT_MOTOR1_MAX_DEG - RIGHT_MOTOR1_MIN_DEG);
 
     }
 
@@ -360,7 +364,10 @@ void OcareRobot::write(ros::Time time, ros::Duration period) {
     else {
 
         new_arm2_pos =
-                RIGHT_MOTOR2_MIN_DEG_VALUE + (m_arm2_pos-RIGHT_MOTOR2_MIN_DEG) * (RIGHT_MOTOR2_MAX_DEG_VALUE - RIGHT_MOTOR2_MIN_DEG_VALUE);
+                RIGHT_MOTOR2_MIN_DEG_VALUE +
+                (m_arm2_pos-RIGHT_MOTOR2_MIN_DEG) *
+                (RIGHT_MOTOR2_MAX_DEG_VALUE - RIGHT_MOTOR2_MIN_DEG_VALUE) /
+                (RIGHT_MOTOR2_MAX_DEG - RIGHT_MOTOR2_MIN_DEG);
 
     }
 

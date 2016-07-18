@@ -11,6 +11,7 @@ import rospkg
 from math import *
 
 from std_msgs.msg import String,Int32,UInt16MultiArray,MultiArrayLayout,MultiArrayDimension
+from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import *
 from python_qt_binding.QtGui import *
@@ -80,6 +81,8 @@ class OcareWidget(QWidget):
         self._stage_pub = rospy.Publisher('stage_set_cmd', Int32, queue_size=10)
         self._control_pub = rospy.Publisher('diff_mode_controller_cmd', Int32, queue_size=10)
         self._arm_mode_pub = rospy.Publisher('arm_mode_controller_cmd', Int32, queue_size=10)
+        self._arm_pos_pub = rospy.Publisher('arm_position_cmd', JointTrajectoryPoint, queue_size=10)
+        self._arm_catch_pub = rospy.Publisher('arm_catch_level', Int32, queue_size=10)
 
     def _setup_subscriber(self):
         self._imu_sub = rospy.Subscriber('/imu', Imu, self.callback_imu)
@@ -108,6 +111,9 @@ class OcareWidget(QWidget):
         self.checkBoxArmOpen.toggled.connect(self._handle_arm_open)
         self.orientReset.clicked[bool].connect(self._handle_reset_orent_clicked)
         self.refreshTopicStatus.clicked[bool].connect(self._handle_refresh_clicked)
+        self.arm_1_pos.valueChanged[int].connect(self._handle_arm_1_pos)
+        self.arm_2_pos.valueChanged[int].connect(self._handle_arm_2_pos)
+        self.arm_catch_level.valueChanged[int].connect(self._handle_arm_catch_level)
 
     def _setup_graph(self):
         path = os.path.join(self.rp.get_path('rqt_ocare'), 'resource', 'compass.png')
@@ -260,6 +266,23 @@ class OcareWidget(QWidget):
         self._is_lrf_ready = False
         self._is_line_sensor_ready = False
         self.emit(SIGNAL("updateSensorStatus"))
+
+    def _handle_arm_1_pos(self, value):
+        msg = JointTrajectoryPoint()
+        msg.positions.append(self.arm_1_pos.value())
+        msg.positions.append(self.arm_2_pos.value())
+        self._arm_pos_pub.publish(msg)
+
+    def _handle_arm_2_pos(self, value):
+        msg = JointTrajectoryPoint()
+        msg.positions.append(self.arm_1_pos.value())
+        msg.positions.append(self.arm_2_pos.value())
+        self._arm_pos_pub.publish(msg)
+
+    def _handle_arm_catch_level(self, value):
+        msg = Int32()
+        msg.data = value
+        self._arm_catch_pub.publish(msg)
 
     def _set_icon_radian(self, radian):
         q = QTransform()

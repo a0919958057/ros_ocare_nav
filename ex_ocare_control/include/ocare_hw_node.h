@@ -14,6 +14,7 @@
 
 // Subscribe the DiffMode, ArmMode
 #include <std_msgs/UInt16MultiArray.h>
+#include <std_msgs/Int32.h>
 
 #define _ROS
 
@@ -129,8 +130,9 @@ private:
     // Subscriber for COMMAND
     ros::Subscriber m_diff_cmd_sub;
     ros::Subscriber m_arm_cmd_sub;
-    // subcriber for arm position command
+    // subscriber for arm position command
     ros::Subscriber m_sub_command;
+
 
     // Publisher who publish the Tracking line sensor
     ros::Publisher m_track_line_pub;
