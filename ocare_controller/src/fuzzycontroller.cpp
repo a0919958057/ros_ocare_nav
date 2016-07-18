@@ -14,12 +14,6 @@ ocare_controllers::FuzzyController::~FuzzyController() {
 
 }
 
-void ocare_controllers::FuzzyController::command_callback(
-        const trajectory_msgs::JointTrajectoryPoint::ConstPtr &referencePoint) {
-    // TODO: get TrajectoryPoint and set the value to Class
-    const double *pos_ = referencePoint->positions.data();
-}
-
 void ocare_controllers::FuzzyController::command_twist_callback(
         const geometry_msgs::Twist::ConstPtr &referenceTwist) {
 
@@ -44,12 +38,7 @@ bool ocare_controllers::FuzzyController::init(
     // read the parameter at parameter server and registe to class
     /****If you need to use arm , you have to change the m_robot from Effort to Position****/
     if(!read_parameter(JointType::WHEEL)) return false;
-    //if(!read_parameter(JointType::ARM)) return false;
-
-
-
-    // setup the subscribe for arm command
-    m_sub_command = m_node.subscribe("command", 1000, &FuzzyController::command_callback, this);
+    // if(!read_parameter(JointType::ARM)) return false;
 
     // setup the subscribe for diff command
     m_sub_diff_command = m_node.subscribe("diff_cmd", 1000, &FuzzyController::command_twist_callback, this);
