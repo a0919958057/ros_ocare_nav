@@ -35,6 +35,15 @@ class OcareWidget(QWidget):
 
     def __init__(self, context):
         super(OcareWidget, self).__init__()
+
+        self._orient = 0
+        self._num = 0
+        self._sensor_value = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        self._is_imu_ready = False
+        self._is_lrf_ready = False
+        self._is_line_sensor_ready = False
+        self._current_stage = 0
+
         self.rp = rospkg.RosPack()
 
         ui_file = os.path.join(self.rp.get_path('rqt_ocare'), 'resource', 'ocare_ui.ui')
@@ -67,13 +76,7 @@ class OcareWidget(QWidget):
         self.connect(self, SIGNAL('updateSensorStatus'), self._update_status)
         self.connect(self, SIGNAL('updateStage'), self._update_stage)
 
-        self._orient = 0
-        self._num = 0
-        self._sensor_value = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        self._is_imu_ready = False
-        self._is_lrf_ready = False
-        self._is_line_sensor_ready = False
-        self._current_stage = 0
+
 
 
     def _setup_publisher(self):
