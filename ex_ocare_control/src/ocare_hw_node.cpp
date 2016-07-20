@@ -5,7 +5,9 @@
 OcareRobot::OcareRobot() :
     m_modbus(),
     m_arm("Robot left arm",sizeof("Robot left arm")),
-    m_diff("Robot wheel",sizeof("Robot wheel"))
+    m_diff("Robot wheel",sizeof("Robot wheel")),
+    m_arm1_pos(0.0),
+    m_arm2_pos(0.0)
     {
     ROS_INFO("Create HWModuble Object.");
 
@@ -108,13 +110,17 @@ void OcareRobot::init(ros::NodeHandle* _node) {
     // subscribe the command from ros topic
     m_diff_cmd_sub = _node->subscribe("/diff_mode_cmd", 50, &OcareRobot::diff_cmd_callback, this);
     m_arm_cmd_sub = _node->subscribe("/arm_mode_cmd", 50, &OcareRobot::arm_cmd_callback, this);
+    // setup the subscribe for arm command
+    m_sub_command = _node->subscribe("/arm_position_cmd", 1000, &OcareRobot::command_callback, this);
     m_track_line_pub = _node->advertise<std_msgs::UInt16MultiArray>("/track_line_sensor", 100);
 
     // Initial the modbus
     m_modbus.init("/dev/ttyUSB0",115200,2,'N');
-    //m_modbus.registerHWModule(&m_arm);
+
 
     m_modbus.registerHWModule(&m_diff);
+    m_modbus.registerHWModule(&m_arm);
+
     m_modbus.connect_slave();
 }
 
@@ -123,6 +129,11 @@ void OcareRobot::init(ros::NodeHandle* _node) {
 /****************** Subscribe callback for diffmode command *******************/
 
 void OcareRobot::diff_cmd_callback(const std_msgs::UInt16MultiArrayConstPtr _messages) {
+
+    if(_messages->data.size() != 3) {
+        ROS_ERROR("diff_cmd_callback Array size error");
+        return;
+    }
 
     // Read the Topic message by specific format, read : DiffTopicCMD
     uint16_t diff_mode      = _messages->data.at(DiffTopicCMD::DIFF_MODE_CMD);
@@ -179,6 +190,11 @@ void OcareRobot::diff_cmd_callback(const std_msgs::UInt16MultiArrayConstPtr _mes
 
 void OcareRobot::arm_cmd_callback(const std_msgs::UInt16MultiArrayConstPtr _messages) {
 
+    if(_messages->data.size() != 3) {
+        ROS_ERROR("arm_cmd_callback Array size error");
+        return;
+    }
+
     // Read the Topic message by specific format, read : ArmTopicCMD
     uint16_t arm_mode       = _messages->data.at(ArmTopicCMD::ARM_MODE_CMD);
     uint16_t slider_mode    = _messages->data.at(ArmTopicCMD::SLIDER_MODE_CMD);
@@ -217,6 +233,24 @@ void OcareRobot::arm_cmd_callback(const std_msgs::UInt16MultiArrayConstPtr _mess
     }
 
 }
+
+void OcareRobot::command_callback(
+        const trajectory_msgs::JointTrajectoryPoint::ConstPtr &referencePoint) {
+    // TODO: get TrajectoryPoint and set the value to Class
+
+    if(referencePoint->positions.size() != 2) {
+        ROS_ERROR("OcareRobot::command_callback positions.size error: %d", referencePoint->positions.size());
+        return;
+    }
+
+    const double *pos_ = referencePoint->positions.data();
+
+    // The first position data is arm1, and second position data is arm2
+    m_arm1_pos = pos_[0];
+    m_arm2_pos = pos_[1];
+
+}
+
 
 /********************* Variable mapping
  *
@@ -281,8 +315,65 @@ void OcareRobot::read(ros::Time time, ros::Duration period) {
 void OcareRobot::write(ros::Time time, ros::Duration period) {
 
     // Sync data from ROS to ArmModbus
-    m_arm.m_l_motor1_degree = cmd[1];
-    m_arm.m_l_motor2_degree = cmd[2];
+
+    // Remapping the arm position cmd
+
+    /************** Arm Mapping Information*******************
+     *
+     *  Arm1
+     *      0   :   520     RIGHT_MOTOR1_MIN_VALUE
+     *      90  :   844     RIGHT_MOTOR1_MAX_VALUE
+     *
+     *  Arm2
+     *      -90 :   815     RIGHT_MOTOR2_MAX_VALUE
+     *      0   :   513
+     *      90  :   211     RIGHT_MOTOR2_MIN_VALUE
+     *
+     * *****************************************************/
+    double new_arm1_pos(RIGHT_MOTOR1_INIT_VALUE);
+    double new_arm2_pos(RIGHT_MOTOR2_INIT_VALUE);
+
+    // Remapping the Arm1 pos
+    if(m_arm1_pos > RIGHT_MOTOR1_MAX_DEG)
+
+        new_arm1_pos = RIGHT_MOTOR1_MAX_DEG_VALUE;
+
+    else if(m_arm1_pos < RIGHT_MOTOR1_MIN_DEG)
+
+        new_arm1_pos = RIGHT_MOTOR1_MIN_DEG_VALUE;
+
+    else {
+
+        new_arm1_pos =
+                RIGHT_MOTOR1_MIN_DEG_VALUE +
+                (m_arm1_pos-RIGHT_MOTOR1_MIN_DEG) *
+                (RIGHT_MOTOR1_MAX_DEG_VALUE - RIGHT_MOTOR1_MIN_DEG_VALUE) /
+                (RIGHT_MOTOR1_MAX_DEG - RIGHT_MOTOR1_MIN_DEG);
+
+    }
+
+    // Remapping the Arm2 pos
+    if(m_arm2_pos > RIGHT_MOTOR2_MAX_DEG)
+
+        new_arm2_pos = RIGHT_MOTOR2_MAX_DEG_VALUE;
+
+    else if(m_arm2_pos < RIGHT_MOTOR2_MIN_DEG)
+
+        new_arm2_pos = RIGHT_MOTOR2_MIN_DEG_VALUE;
+
+    else {
+
+        new_arm2_pos =
+                RIGHT_MOTOR2_MIN_DEG_VALUE +
+                (m_arm2_pos-RIGHT_MOTOR2_MIN_DEG) *
+                (RIGHT_MOTOR2_MAX_DEG_VALUE - RIGHT_MOTOR2_MIN_DEG_VALUE) /
+                (RIGHT_MOTOR2_MAX_DEG - RIGHT_MOTOR2_MIN_DEG);
+
+    }
+
+
+    m_arm.m_l_motor1_degree = new_arm1_pos;
+    m_arm.m_l_motor2_degree = new_arm2_pos;
 
     // Sync data from ROS to DiffModbus
     m_diff.m_left_wheel_torque = wheel_cmd[0];

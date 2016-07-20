@@ -6,7 +6,6 @@
 #include<ros/node_handle.h>
 #include<controller_interface/controller.h>
 #include<hardware_interface/joint_command_interface.h>
-#include<trajectory_msgs/JointTrajectoryPoint.h>
 #include<geometry_msgs/Twist.h>
 #include<sensor_msgs/JointState.h>
 #include<sensor_msgs/Imu.h>
@@ -14,6 +13,8 @@
 #include<math.h>
 
 #define WHEEL_TORQUE_LIMIT 200.0
+
+
 
 namespace ocare_controllers
 {
@@ -39,8 +40,6 @@ namespace ocare_controllers
         hardware_interface::JointHandle m_left_wheel;
         hardware_interface::JointHandle m_right_wheel;
 
-        // subcriber for command
-        ros::Subscriber m_sub_command;
         // subcriber for diff Twist command
         ros::Subscriber m_sub_diff_command;
         // subcriber for pose_imu
@@ -55,9 +54,6 @@ namespace ocare_controllers
         double m_cmd_yaw;
         double m_cmd_vel;
 
-
-
-        void command_callback(const trajectory_msgs::JointTrajectoryPoint::ConstPtr &referencePoint);
         void command_twist_callback(const geometry_msgs::Twist::ConstPtr &referenceTwist);
         void callback_imu(const sensor_msgs::Imu::ConstPtr& msg);
 

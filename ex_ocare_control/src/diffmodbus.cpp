@@ -52,7 +52,7 @@ bool DiffModbus::write() {
     int num = modbus_write_registers(
                 m_ctx, REG_CMD_START, REG_CMD_END-REG_CMD_START+1, reg);
 
-    if (num != CMD_SENSOR_BW_MODE-CMD_CHASSIS_MODE+1) {// number of writed registers is not the one expected
+    if (num != REG_CMD_END-REG_CMD_START+1) {// number of writed registers is not the one expected
 #ifdef _ROS
         ROS_ERROR( "Failed to write: %s\n", modbus_strerror(errno))
 #else

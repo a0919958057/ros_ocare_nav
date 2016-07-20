@@ -9,6 +9,8 @@ int main(int argc, char** argv) {
     ros::NodeHandle node("ocare");
     ros::NodeHandle node2;
 
+
+
     ROS_INFO("Successful robot_main_node");
     OcareRobot robot;
     ROS_INFO("Successful initial the OcareRobot");

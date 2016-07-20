@@ -28,9 +28,11 @@ extern "C" {
 #define PIN_SW_START          (22)
 bool fg_need_bulb(false);
 bool fg_start(false);
+int  fg_mode(-1);
 #else
 bool fg_need_bulb(true);
-bool fg_start(true);
+bool fg_start(false);
+int  fg_mode(-1);
 
 #endif
 
@@ -69,12 +71,32 @@ bool fg_start(true);
 
 /***********************************************/
 
+/**************** Mode Define ******************/
+
+// Diff Mode
+#define MODE_AUTO_START     (1)
+#define MODE_REMOTE_START   (2)
+#define MODE_STOP           (-1)
+
+// Arm Mode
+#define MODE_ARM_SLIDER_HOME        (-1)
+#define MODE_ARM_SLIDER_OPEN        (1)
+#define MODE_ARM_HOME_POSE          (-2)
+#define MODE_ARM_BTN_POSE           (2)
+#define MODE_ARM_FREE_CONTROL       (3)
+
+/***********************************************/
+
 double front_length(10);
 double right_length(10);
 double left_length(10);
 
 double orient(0);
 int stage(0);
+
+uint16_t arm_mode = ArmModbus::ArmModeCMD::ARM_HOME_CMD;
+uint16_t slider_mode = ArmModbus::SliderStateCMD::SLIDER_CLOSE_CMD;
+uint16_t catch_level = 0;
 
 bool sensor_ready(false);
 bool imu_ready(false);
@@ -90,8 +112,234 @@ double get_sensor_average();
 bool is_sensor_noline();
 double cot_angle(double _degree);
 
+class ConvergDetector {
+public:
+    ConvergDetector() :
+        index_counter(0),
+        fg_inited(false),
+        fg_started(false),
+        ref_data(0.0) {}
+
+    ~ConvergDetector() {}
+
+private:
+
+    // Flag for Detector status
+    bool fg_inited;
+    bool fg_started;
+    int index_counter;
+
+    // Detector registers
+    double ref_data;
+    double data_recoard[SIZE_DATA_RECOARD];
+public:
+    // Need init first
+    void init(double _ref) {
+        fg_inited = true;
+        ref_data = _ref;
+        for(int i=0;i<SIZE_DATA_RECOARD;i++) {
+            data_recoard[i] = 10.0;
+        }
+    }
+
+    bool start() {
+        if(fg_inited) {
+            fg_started = true;
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    void stop() {
+        fg_started = false;
+        fg_inited = false;
+    }
+
+    void update() {
+        if(fg_started) {
+            data_recoard[index_counter] = cot_angle(fabs(ref_data - orient));
+            index_counter++;
+            if(index_counter == SIZE_DATA_RECOARD) index_counter = 0;
+            ROS_INFO_NAMED("ConvergDetector", "Debug : Error= %f ,ref_data = %f,orient = %f",
+                           fabs(ref_data - orient),ref_data,orient);
+        }
+        else {
+            ROS_ERROR_NAMED("ConvergDetector", "Need start first!");
+        }
+    }
+
+    bool isConverged() {
+
+        if(fg_started) {
+            double sum(0);
+            double avg(0);
+            for(int i=0;i<SIZE_DATA_RECOARD;i++) {
+                sum += data_recoard[i];
+            }
+            avg = sum / SIZE_DATA_RECOARD;
+            ROS_INFO_NAMED("ConvergDetector", "Debug : Avg = %f ",avg);
+            return (CONVERG_THROSHOLD > avg);
+
+        }
+
+        else {
+            ROS_ERROR_NAMED("ConvergDetector", "Need start first!");
+            return false;
+        }
+
+    }
+
+    bool isStarted() {
+        return fg_started;
+    }
+};
+
+class WBDetector {
+public:
+    WBDetector() :
+        fg_inited(false),
+        fg_started(false) {}
+
+    ~WBDetector() {}
+
+private:
+
+    // Flag for Detector status
+    bool fg_inited;
+    bool fg_started;
+    bool fg_w2b;
+
+    int head;
+    int w_detected;
+    int b_detected;
+
+public:
+    // Need init first
+    void init(bool _is_w2b) {
+        fg_w2b = _is_w2b;
+        head = 0;
+        w_detected = -1;
+        b_detected = -1;
+        fg_inited = true;
+    }
+
+    bool start() {
+        if(fg_inited) {
+            fg_started = true;
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    void stop() {
+        fg_started = false;
+        fg_inited = false;
+    }
+
+    void update() {
+        ROS_DEBUG_NAMED("WBDetector", "w_detected:%d, b_detected:%d, sensor AVG: %f",
+                        w_detected, b_detected, get_sensor_average());
+        if(fg_started) {
+            if( get_sensor_average() > 70.0 && b_detected < 0)
+                b_detected = head ++;
+            if( get_sensor_average() < 30.0 && w_detected < 0)
+                w_detected = head ++;
+        }
+        else {
+            ROS_ERROR_NAMED("WBDetector", "Need start first!");
+        }
+    }
+
+    bool isDetected() {
+        if(fg_started) {
+            if(b_detected < 0 || w_detected < 0) {
+                return false;
+            }
+            else {
+                if(fg_w2b)
+                    return b_detected > w_detected;
+                else
+                    return w_detected > b_detected;
+            }
+        }
+        else {
+            ROS_ERROR_NAMED("WBDetector", "Need start first!");
+            return false;
+        }
+
+    }
+
+    bool isStarted() {
+        return fg_started;
+    }
+};
+
+ConvergDetector stable_detector;
+WBDetector wb_detector;
+
+// The GUI Panel command callback
 void callback_stage_cmd(const std_msgs::Int32ConstPtr &msg) {
+
     stage = msg->data;
+
+    // Reset Stage Detector
+    stable_detector.stop();
+    wb_detector.stop();
+}
+
+void callback_arm_cmd(const std_msgs::Int32ConstPtr &msg) {
+
+    switch(msg->data) {
+    case MODE_ARM_SLIDER_HOME:
+        slider_mode = ArmModbus::SliderStateCMD::SLIDER_CLOSE_CMD;
+        break;
+    case MODE_ARM_SLIDER_OPEN:
+        slider_mode = ArmModbus::SliderStateCMD::SLIDER_OPEN_CMD;
+        break;
+    case MODE_ARM_HOME_POSE:
+        arm_mode = ArmModbus::ArmModeCMD::ARM_HOME_CMD;
+        break;
+    case MODE_ARM_BTN_POSE:
+        arm_mode = ArmModbus::ArmModeCMD::ARM_BUTTON_POSE_CMD;
+        break;
+    case MODE_ARM_FREE_CONTROL:
+        arm_mode = ArmModbus::ArmModeCMD::ARM_FREE_CONTROLL_CMD;
+        break;
+
+    }
+
+}
+
+void callback_arm_catch(const std_msgs::Int32ConstPtr &msg) {
+
+    int a_catch_level = msg->data;
+    if( a_catch_level > 100) a_catch_level = 100;
+    else if( a_catch_level < 0 ) a_catch_level = 0;
+
+    catch_level = a_catch_level;
+
+}
+
+
+void callback_control(const std_msgs::Int32ConstPtr &msg) {
+
+    // Register the GUI controll MSG
+    fg_mode = msg->data;
+    switch(msg->data) {
+    case MODE_AUTO_START:
+    case MODE_REMOTE_START:
+        fg_start = true;
+        break;
+    case MODE_STOP:
+    default:
+        fg_start = false;
+        break;
+
+    }
 }
 
 void callback_laser(const sensor_msgs::LaserScanConstPtr &msg) {
@@ -128,20 +376,6 @@ void callback_sensor(const std_msgs::UInt16MultiArrayConstPtr &msg) {
     }
     sensor_ready = true;
 
-    ROS_DEBUG_NAMED("SensorCallback","%3d,%3d,%3d,%3d,%3d,%3d,%3d,%3d,%3d,%3d,%3d,%3d,%3d",
-            sensor_value[0],
-            sensor_value[1],
-            sensor_value[2],
-            sensor_value[3],
-            sensor_value[4],
-            sensor_value[5],
-            sensor_value[6],
-            sensor_value[7],
-            sensor_value[8],
-            sensor_value[9],
-            sensor_value[10],
-            sensor_value[11],
-            sensor_value[12]);
 }
 
 int main(int argc, char** argv) {
@@ -156,16 +390,40 @@ int main(int argc, char** argv) {
 
     // Create a ros node
     ros::NodeHandle node;
+
+/******************************** Subscriber ********************************/
+
     // Subscribe the laser scan topic
     ros::Subscriber laser_sub =
-            node.subscribe<sensor_msgs::LaserScan>("/scan",50,callback_laser);
+            node.subscribe<sensor_msgs::LaserScan>("/scan", 50, callback_laser);
 
     // Subscribe the IMU topic
     ros::Subscriber imu_sub =
-            node.subscribe<sensor_msgs::Imu>("/imu",50,callback_imu);
+            node.subscribe<sensor_msgs::Imu>("/imu", 50, callback_imu);
 
+    // Subscribe the tracking line sensor topic
     ros::Subscriber sensor_sub =
-            node.subscribe<std_msgs::UInt16MultiArray>("/track_line_sensor",50,callback_sensor);
+            node.subscribe<std_msgs::UInt16MultiArray>("/track_line_sensor", 50, callback_sensor);
+
+    // Subscribe the stage cmd topic
+    ros::Subscriber stage_sub =
+            node.subscribe<std_msgs::Int32>("/stage_set_cmd", 10, callback_stage_cmd);
+
+    // Subscribe the cmd topic for this stage controller
+    ros::Subscriber control_sub =
+            node.subscribe<std_msgs::Int32>("/diff_mode_controller_cmd", 10, callback_control);
+
+    // Subscribe the arm cmd topic from GUI interface
+    ros::Subscriber arm_control_sub =
+            node.subscribe<std_msgs::Int32>("/arm_mode_controller_cmd", 10, callback_arm_cmd);
+
+    // subscriber for arm catch level command
+    ros::Subscriber m_sub_catch_command =
+            node.subscribe("/arm_catch_level", 50, callback_arm_catch);
+
+
+
+/*****************************************************************************/
 
 /******************************** Publishers ********************************/
     /********** The Diff command Topic Struct for uint16_t array
@@ -196,7 +454,37 @@ int main(int argc, char** argv) {
 
     // Create a publish that publish the differential wheel Mode
     ros::Publisher diff_pub =
-            node.advertise<std_msgs::UInt16MultiArray>("/diff_mode_cmd",50);
+            node.advertise<std_msgs::UInt16MultiArray>("/diff_mode_cmd", 50);
+
+    /********** The Arm command Topic Struct for uint16_t array
+    *  enum ArmTopicCMD {
+    *     ARM_MODE_CMD,
+    *     SLIDER_MODE_CMD,
+    *     EFFORT_CATCH_LEVEL_CMD
+    *  };
+    ***************************************************************/
+
+
+    /******Defination of the Arm Mode Command
+     * ARM_HOME_CMD :           Arm go to Home position
+     * ARM_BUTTON_POSE_CMD:     Arm go to push button pose
+     * ARM_FREE_CONTROLL_CMD:   Arm go to motor controllable state,
+     *                          let arm can be controll by ROS.
+     * **************************/
+
+    /******Defination of the Slider Command
+     * SLIDER_OPEN_CMD :           Open the slider to the right position
+     * SLIDER_CLOSE_CMD:           Close the slider to the home position
+     * **************************/
+
+    /******Defination of the catch level
+     * 0 :               Catch full open
+     * 100:              Catch full close
+     * **************************/
+
+    // Create a publish that publish the Arm mode cmd to HWModule node
+    ros::Publisher arm_cmd_pub =
+            node.advertise<std_msgs::UInt16MultiArray>("/arm_mode_cmd", 50);
 
     /******Defination of the Chassis Torque CMD
      * Linear.x :            The forward speed CMD
@@ -205,7 +493,13 @@ int main(int argc, char** argv) {
 
     // Create a publish that publish the differential wheel Torque CMD
     ros::Publisher diff_twist_pub =
-            node.advertise<geometry_msgs::Twist>("/ocare/pose_fuzzy_controller/diff_cmd",50);
+            node.advertise<geometry_msgs::Twist>("/ocare/pose_fuzzy_controller/diff_cmd", 50);
+
+    // Create a publish that publish the Stage mode to GUI panel
+    ros::Publisher stage_pub =
+            node.advertise<std_msgs::Int32>("/stage_mode", 50);
+
+
 
 
 /*****************************************************************************/
@@ -215,12 +509,12 @@ int main(int argc, char** argv) {
 
 
 
-    printf("Which stage to start?(0~20) \n");
-    scanf("%d", &stage);
-    if(stage < 0 || stage > 21) {
-        printf("Parameter error, Start at stage 0");
-        stage = 0;
-    }
+//    printf("Which stage to start?(0~20) \n");
+//    scanf("%d", &stage);
+//    if(stage < 0 || stage > 21) {
+//        printf("Parameter error, Start at stage 0");
+//        stage = 0;
+//    }
 
     while(ros::ok()) {
 
@@ -228,7 +522,6 @@ int main(int argc, char** argv) {
         //fg_need_bulb    =  digitalRead(PIN_SW_NEED_BULB_TESK);
         //fg_start        =  digitalRead(PIN_SW_START);
         fg_need_bulb = true;
-        fg_start = true;
 #endif
 
 #ifdef _DEBUG_SENSOR
@@ -250,37 +543,91 @@ int main(int argc, char** argv) {
                 sensor_value[12]);
 
 #else
-        // Makesure every sensor topic is ready.
-        if( sensor_ready && imu_ready && laser_ready ) {
-            // Do the current stage tesk
-            loop_tesk(stage, &diff_pub, &diff_twist_pub);
+        if(fg_start) {
 
-            // Detect the stage change
-            if(stage == 11 && fg_need_bulb) {   // If Need Bulb tesk and stage is 11, then Change stage to Bulk tesk
-                if(stage_change_detect(stage)) stage = 110;
-            }
-            else if( stage >= 110 && stage <=113) {
-                if(stage_change_detect(stage)) stage++;
-                if(stage == 114) stage = 12;
-            }
-            else if (stage == 20) {
-                if(stage_change_detect(stage)) stage = 200;
-            }
-            else if( stage >= 200 && stage <=202) {
-                if(stage_change_detect(stage)) stage++;
-                if(stage == 203) stage = 21;
-            }
-            else {
+            // Makesure every sensor topic is ready.
+            if( sensor_ready && imu_ready && laser_ready ) {
 
-                if(stage_change_detect(stage)) {
-                    ROS_INFO("STAGE CHANGE");
-                    stage++;
+                if( fg_mode == MODE_AUTO_START) {
+
+                    // Do the current stage tesk
+                    loop_tesk(stage, &diff_pub, &diff_twist_pub);
+
+                    // Detect the stage change
+                    if(stage == 11 && fg_need_bulb) {   // If Need Bulb tesk and stage is 11, then Change stage to Bulk tesk
+                        if(stage_change_detect(stage)) stage = 110;
+                    }
+                    else if( stage >= 110 && stage <=113) {
+                        if(stage_change_detect(stage)) stage++;
+                        if(stage == 114) stage = 12;
+                    }
+                    else if (stage == 20) {
+                        if(stage_change_detect(stage)) stage = 200;
+                    }
+                    else if( stage >= 200 && stage <=202) {
+                        if(stage_change_detect(stage)) stage++;
+                        if(stage == 203) stage = 21;
+                    }
+                    else {
+
+                        if(stage_change_detect(stage)) {
+                            ROS_INFO("STAGE CHANGE");
+                            stage++;
+                        }
+                    }
                 }
+                else if (fg_mode == MODE_REMOTE_START) {
+
+                    // The chassic's Mode CMD message
+                    std_msgs::UInt16MultiArray cmd_message;
+
+                    cmd_message.data.clear();
+                    cmd_message.data.push_back((uint16_t)DiffModbus::MODE_CONTROLLABLE_CMD);
+                    cmd_message.data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
+                    cmd_message.data.push_back((uint16_t)DiffModbus::WHITE_CMD);
+
+                    // Publish the topic
+                    diff_pub.publish(cmd_message);
+
+                    // NOTE: the twist command will be sended by another node
+                }
+
             }
+
         }
+        else {
+            // The chassic's Mode CMD message
+            std_msgs::UInt16MultiArray cmd_message;
+            // The differential wheel Torque CMD message
+            geometry_msgs::Twist cmd_twist;
+
+            cmd_message.data.clear();
+            cmd_message.data.push_back((uint16_t)DiffModbus::MODE_STOP_CMD);
+            cmd_message.data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
+            cmd_message.data.push_back((uint16_t)DiffModbus::WHITE_CMD);
+            cmd_twist.linear.x = 0;
+            cmd_twist.angular.z = 0;
+
+            // Publish the topic
+            diff_pub.publish(cmd_message);
+            diff_twist_pub.publish(cmd_twist);
+        }
+
 #endif
 
+        // Report the current stage to GUI
+        std_msgs::Int32 stage_msg;
+        stage_msg.data = stage;
+        stage_pub.publish(stage_msg);
 
+        // Send the arm command to HWModule modbus interface node
+        std_msgs::UInt16MultiArray arm_cmd_msg;
+        arm_cmd_msg.data.clear();
+        arm_cmd_msg.data.push_back(arm_mode);
+        arm_cmd_msg.data.push_back(slider_mode);
+        arm_cmd_msg.data.push_back(catch_level);
+
+        arm_cmd_pub.publish(arm_cmd_msg);
 
 
         // Sleep for a while
@@ -469,181 +816,11 @@ void loop_tesk(int _stage, ros::Publisher* _diff_pub, ros::Publisher* _diff_twis
     _diff_twist_pub->publish(cmd_twist);
 }
 
-class ConvergDetector {
-public:
-    ConvergDetector() :
-        index_counter(0),
-        fg_inited(false),
-        fg_started(false),
-        ref_data(0.0) {}
-
-    ~ConvergDetector() {}
-
-private:
-
-    // Flag for Detector status
-    bool fg_inited;
-    bool fg_started;
-    int index_counter;
-
-    // Detector registers
-    double ref_data;
-    double data_recoard[SIZE_DATA_RECOARD];
-public:
-    // Need init first
-    void init(double _ref) {
-        fg_inited = true;
-        ref_data = _ref;
-        for(int i=0;i<SIZE_DATA_RECOARD;i++) {
-            data_recoard[i] = 10.0;
-        }
-    }
-
-    bool start() {
-        if(fg_inited) {
-            fg_started = true;
-            return true;
-        }
-        else {
-            return false;
-        }
-    }
-
-    void stop() {
-        fg_started = false;
-        fg_inited = false;
-    }
-
-    void update() {
-        if(fg_started) {
-            data_recoard[index_counter] = cot_angle(fabs(ref_data - orient));
-            index_counter++;
-            if(index_counter == SIZE_DATA_RECOARD) index_counter = 0;
-            ROS_INFO_NAMED("ConvergDetector", "Debug : Error= %f ,ref_data = %f,orient = %f",
-                           fabs(ref_data - orient),ref_data,orient);
-        }
-        else {
-            ROS_ERROR_NAMED("ConvergDetector", "Need start first!");
-        }
-    }
-
-    bool isConverged() {
-
-        if(fg_started) {
-            double sum(0);
-            double avg(0);
-            for(int i=0;i<SIZE_DATA_RECOARD;i++) {
-                sum += data_recoard[i];
-            }
-            avg = sum / SIZE_DATA_RECOARD;
-            ROS_INFO_NAMED("ConvergDetector", "Debug : Avg = %f ",avg);
-            return (CONVERG_THROSHOLD > avg);
-
-        }
-
-        else {
-            ROS_ERROR_NAMED("ConvergDetector", "Need start first!");
-            return false;
-        }
-
-    }
-
-    bool isStarted() {
-        return fg_started;
-    }
-};
-
-class WBDetector {
-public:
-    WBDetector() :
-        fg_inited(false),
-        fg_started(false) {}
-
-    ~WBDetector() {}
-
-private:
-
-    // Flag for Detector status
-    bool fg_inited;
-    bool fg_started;
-    bool fg_w2b;
-
-    int head;
-    int w_detected;
-    int b_detected;
-
-public:
-    // Need init first
-    void init(bool _is_w2b) {
-        fg_w2b = _is_w2b;
-        head = 0;
-        w_detected = -1;
-        b_detected = -1;
-        fg_inited = true;
-    }
-
-    bool start() {
-        if(fg_inited) {
-            fg_started = true;
-            return true;
-        }
-        else {
-            return false;
-        }
-    }
-
-    void stop() {
-        fg_started = false;
-        fg_inited = false;
-    }
-
-    void update() {
-        ROS_DEBUG_NAMED("WBDetector", "w_detected:%d, b_detected:%d, sensor AVG: %f",
-                        w_detected, b_detected, get_sensor_average());
-        if(fg_started) {
-            if( get_sensor_average() > 70.0 && b_detected < 0)
-                b_detected = head ++;
-            if( get_sensor_average() < 30.0 && w_detected < 0)
-                w_detected = head ++;
-        }
-        else {
-            ROS_ERROR_NAMED("WBDetector", "Need start first!");
-        }
-    }
-
-    bool isDetected() {
-        if(fg_started) {
-            if(b_detected < 0 || w_detected < 0) {
-                return false;
-            }
-            else {
-                if(fg_w2b)
-                    return b_detected > w_detected;
-                else
-                    return w_detected > b_detected;
-            }
-        }
-        else {
-            ROS_ERROR_NAMED("WBDetector", "Need start first!");
-            return false;
-        }
-
-    }
-
-    bool isStarted() {
-        return fg_started;
-    }
-};
-
-
 bool stage_change_detect(int _stage) {
     // Count the times of robot distence over minimum limit
     static int laser_distence_overlimit_conter(0);
     static bool fg_usetimer(false);
     static ros::Time last_time = ros::Time::now();
-    static ConvergDetector stable_detector;
-    static WBDetector wb_detector;
-
 
     switch(_stage) {
     case 0:

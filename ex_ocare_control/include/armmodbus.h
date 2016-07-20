@@ -13,6 +13,14 @@
 
 #include "hwmodule.h"
 
+#define MOTOR1_CMD_INIT_VALUE       (844)
+#define MOTOR2_CMD_INIT_VALUE       (520)
+#define CATCH_LEVEL_CMD_INIT_VALUE  (0)
+
+#define REG_CMD_START   EFFORT_CATCH_LEVEL
+#define REG_CMD_END     CMD_ARM_MODE
+#define REG_READ_START  LEFT_MOTOR1_DEGREE
+#define REG_READ_END    EFFORT_CATCH_LEVEL
 
 class ArmModbus : public HWModule
 {
