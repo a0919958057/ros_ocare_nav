@@ -3,12 +3,14 @@
 
 #include<vector>
 
-#include<ros/node_handle.h>
-#include<controller_interface/controller.h>
-#include<hardware_interface/joint_command_interface.h>
-#include<geometry_msgs/Twist.h>
-#include<sensor_msgs/JointState.h>
-#include<sensor_msgs/Imu.h>
+#include <ros/node_handle.h>
+#include <controller_interface/controller.h>
+#include <hardware_interface/joint_command_interface.h>
+#include <geometry_msgs/Twist.h>
+#include <sensor_msgs/JointState.h>
+#include <sensor_msgs/Imu.h>
+#include <dynamic_reconfigure/server.h>
+#include <ocare_controllers/PIDControllerConfig.h>
 
 #include<math.h>
 
@@ -50,12 +52,24 @@ namespace ocare_controllers
         double m_pitch;
         double m_yaw;
 
+        // The parameter of controller
+        double k_p;
+        double k_d;
+
         // command of robot
         double m_cmd_yaw;
         double m_cmd_vel;
 
-        void command_twist_callback(const geometry_msgs::Twist::ConstPtr &referenceTwist);
-        void callback_imu(const sensor_msgs::Imu::ConstPtr& msg);
+        void callback_reconfigure(
+                ocare_controller::PIDControllerConfig &config, uint32_t level);
+
+        void command_twist_callback(
+                const geometry_msgs::Twist::ConstPtr &referenceTwist);
+
+        void callback_imu(
+                const sensor_msgs::Imu::ConstPtr& msg);
+
+        dynamic_reconfigure::Server<ocare_controller::PIDControllerConfig> m_server;
 
         static double cot_angle(double _degree);
 

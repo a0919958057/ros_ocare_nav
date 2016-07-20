@@ -1,16 +1,31 @@
 #include <sys/mman.h>
 #include "fuzzycontroller.h"
-#include<tf/tf.h>
-#include<angles/angles.h>
+#include <tf/tf.h>
+#include <angles/angles.h>
 #include <pluginlib/class_list_macros.h>
+#include <dynamic_reconfigure/server.h>
+#include <ocare_controllers/PIDControllerConfig.h>
+
+
 
 
 
 ocare_controllers::FuzzyController::FuzzyController() :
-    m_roll(0.0), m_pitch(0.0), m_yaw(0.0), m_cmd_vel(0.0), m_cmd_yaw(0.0) {
+    m_roll(0.0), m_pitch(0.0), m_yaw(0.0), m_cmd_vel(0.0), m_cmd_yaw(0.0), k_p(324.35), k_d(7.8) {
 }
 
 ocare_controllers::FuzzyController::~FuzzyController() {
+
+}
+
+void ocare_controllers::FuzzyController::callback_reconfigure(
+        ocare_controller::PIDControllerConfig &config, uint32_t level) {
+
+    ROS_INFO("Reconfigure Request:  kP = %f, kD = %f",
+                config.k_p, config.k_d);
+
+    k_p = config.k_p;
+    k_d = config.k_d;
 
 }
 
@@ -28,8 +43,14 @@ bool ocare_controllers::FuzzyController::init(
 
     // Read the topic name from Parameter
     if(!m_node.hasParam("imu_topic"))
-        ROS_ERROR("Usage : rosrun robot_controller robot_controller_node _imu_topic:=<topic>");
+        ROS_WARN("Usage : rosrun robot_controller robot_controller_node _imu_topic:=<topic>");
     m_node.param<std::string>("imu_topic",imu_topic,"/imu");
+
+
+    dynamic_reconfigure::Server<ocare_controller::PIDControllerConfig>::CallbackType f;
+
+    f = boost::bind(&FuzzyController::callback_reconfigure, this, _1, _2);
+    m_server.setCallback(f);
 
      // Register node for parent and robot handle
     m_node = n;
@@ -81,8 +102,8 @@ void ocare_controllers::FuzzyController::update(const ros::Time &time, const ros
 
 
 
-    double output_p = err_modify * (300);
-    double output_d = error_dot * (10);
+    double output_p = err_modify * (k_p);
+    double output_d = error_dot * (k_d);
 
 
     double left_torque_     = - output_p - output_d + m_cmd_vel;
