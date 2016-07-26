@@ -108,6 +108,12 @@ class OcareWidget(QWidget):
         self.numGroup.addButton(self.num_8, 8)
         self.numGroup.addButton(self.num_9, 9)
         self.numGroup.buttonClicked[int].connect(self._handle_num)
+        # Because Raspberry's pyqt version don't support auto add QButtonGroup
+        # We need add buttonGroup ourself
+        self.buttonGroup = QButtonGroup()
+        self.buttonGroup.addButton(self.btnModeBP)
+        self.buttonGroup.addButton(self.btnModeFC)
+        self.buttonGroup.addButton(self.btnModeHP)
         self.buttonGroup.buttonClicked.connect(self._handle_arm_mode)
         self.num_clear.clicked[bool].connect(self._handle_num_clear)
         self.num_enter.clicked[bool].connect(self._handle_num_enter)
