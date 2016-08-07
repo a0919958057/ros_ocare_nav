@@ -17,6 +17,12 @@ from python_qt_binding.QtCore import *
 from python_qt_binding.QtGui import *
 from sensor_msgs.msg import Imu, LaserScan
 
+import sys
+import gi
+gi.require_version('Gst', '1.0')
+from gi.repository import GObject, Gst
+GObject.threads_init()
+from gi.repository import GLib
 
 
 class OcareWidget(QWidget):
@@ -44,6 +50,8 @@ class OcareWidget(QWidget):
         self._is_line_sensor_ready = False
         self._current_stage = 0
 
+
+
         self.rp = rospkg.RosPack()
 
         ui_file = os.path.join(self.rp.get_path('rqt_ocare'), 'resource', 'ocare_ui.ui')
@@ -66,6 +74,7 @@ class OcareWidget(QWidget):
                            self.progressBar_12,
                            self.progressBar_13]
 
+        self._setup_gstreamer()
         self._setup_publisher()
         self._setup_subscriber()
         self._setup_callback()
@@ -76,8 +85,125 @@ class OcareWidget(QWidget):
         self.connect(self, SIGNAL('updateSensorStatus'), self._update_status)
         self.connect(self, SIGNAL('updateStage'), self._update_stage)
 
+    def _setup_gstreamer(self):
 
+        Gst.init()
 
+        # Setup the Debug mode for GStreamer
+        Gst.debug_set_active(False)
+        Gst.debug_set_default_threshold(3)
+
+        import platform
+        if(platform.machine() == 'x86_64'):
+            # If there is PC
+            self._init_audio_pub_stream()
+        else:
+            # If there is raspberry Pi
+            self._init_audio_rec_stream()
+
+        # self._init_audio_pub_stream()
+        # self._init_audio_rec_stream()
+        # self._init_video_pub_stream()
+        # self._init_video_rec_stream()
+
+    # There is useless
+    def _init_video_pub_stream(self):
+        self.pipe_video_pub = Gst.Pipeline.new("Streamer")
+
+        self.camera = Gst.ElementFactory.make("v4l2src", "camera")
+        self.camera.set_property('device', '/dev/video0')
+
+        self.videocaps = Gst.Caps.from_string("video/x-raw,width=(int)640,height=(int)480,framerate=(fraction)30/1")
+        self.videofilter1 = Gst.ElementFactory.make("capsfilter", "filter1")
+        self.videofilter1.set_property("caps", self.videocaps)
+
+        self.videov = Gst.ElementFactory.make("videoconvert", "converter1")
+
+        import platform
+
+        if(platform.machine() == 'x86_64'):
+            # If there is PC
+            self.encoder = Gst.ElementFactory.make("x264enc", "encoder")
+            print('Using the x264enc')
+        else:
+            # If there is raspberry Pi
+            self.encoder = Gst.ElementFactory.make("omxh264enc", "encoder")
+            self.encoder.set_property('target-bitrate', 15000000)
+            self.encoder.set_property('control-rate', 'variable')
+            print('Using the omxh264enc')
+
+        self.videoecaps = Gst.Caps.from_string("video/x-h264, profile=high")
+        self.videofilter2 = Gst.ElementFactory.make("capsfilter", "filter2")
+        self.videofilter2.set_property("caps", self.videoecaps)
+
+        self.videoparse = Gst.ElementFactory.make("h264parse", "parse")
+
+        self.rtph = Gst.ElementFactory.make("rtph264pay", "rtph")
+        self.rtph.set_property('config-interval', 10)
+        self.rtph.set_property('pt', 96)
+
+        self.udpsink = Gst.ElementFactory.make("udpsink", "udpsink")
+        self.udpsink.set_property('host', 'localhost')
+        self.udpsink.set_property('port', 25650)
+        self.udpsink.set_property('auto-multicast', False)
+
+        self.pipe_video_pub.add(self.camera)
+        self.pipe_video_pub.add(self.videofilter1)
+        self.pipe_video_pub.add(self.videov)
+        self.pipe_video_pub.add(self.videofilter2)
+        self.pipe_video_pub.add(self.videoparse)
+        self.pipe_video_pub.add(self.rtph)
+        self.pipe_video_pub.add(self.udpsink)
+
+        # self.test_sink = Gst.ElementFactory.make('autovideosink', 'testsink')
+        # self.pipe_video_pub.add(self.test_sink)
+        # self.camera.link(self.test_sink)
+
+        self.camera.link(self.videofilter1)
+        self.videofilter1.link(self.videov)
+        self.videov.link(self.encoder)
+        self.encoder.link(self.videofilter2)
+        self.videofilter2.link(self.videoparse)
+        self.videoparse.link(self.rtph)
+        self.rtph.link(self.udpsink)
+
+        self.pipe_video_pub.set_state(Gst.State.PLAYING)
+
+    def _init_audio_pub_stream(self):
+        self.pipe_audio_pub = Gst.parse_launch(
+            'alsasrc ! '
+            'audioconvert ! '
+            'audio/x-raw, format=U16LE, channels=1, rate=44100 ! '
+            'audioconvert ! '
+            'rtpL16pay ! '
+            'udpsink host=ubuntu port=5000')
+
+        self.pipe_audio_pub.set_state(Gst.State.PAUSED)
+
+    def _init_video_rec_stream(self):
+        self.pipe_video_rec = Gst.parse_launch(
+            'udpsrc port=25650 ! '
+            'application/x-rtp, payload=96 ! '
+            'rtpjitterbuffer ! '
+            'rtph264depay ! '
+            'avdec_h264 ! '
+            'autovideosink'
+        )
+
+        # Receive default Playing
+        self.pipe_video_rec.set_state(Gst.State.PLAYING)
+
+    def _init_audio_rec_stream(self):
+        self.pipe_audio_rec = Gst.parse_launch(
+            'udpsrc port=5000 ! '
+            'application/x-rtp,media=audio, clock-rate=44100, width=16, height=16, encoding-name=L16, encoding-params=1, channels=1, channel-positions=1, payload=96 ! '
+            'rtpL16depay ! '
+            'audioconvert ! '
+            'alsasink sync=false'
+        )
+
+        # Receive default Playing
+        self.pipe_audio_rec.set_state(Gst.State.PLAYING)
 
     def _setup_publisher(self):
         self._pub = rospy.Publisher('chatter', String, queue_size=10)
@@ -123,6 +249,18 @@ class OcareWidget(QWidget):
         self.arm_1_pos.valueChanged[int].connect(self._handle_arm_1_pos)
         self.arm_2_pos.valueChanged[int].connect(self._handle_arm_2_pos)
         self.arm_catch_level.valueChanged[int].connect(self._handle_arm_catch_level)
+
+        # self.video_pub_start.clicked[bool].connect(self._handle_video_pub_start)
+        # self.video_pub_stop.clicked[bool].connect(self._handle_video_pub_stop)
+
+        self.audio_pub_start.clicked[bool].connect(self._handle_audio_pub_start)
+        self.audio_pub_stop.clicked[bool].connect(self._handle_audio_pub_stop)
+
+        # self.video_rec_start.clicked[bool].connect(self._handle_video_rec_start)
+        # self.video_rec_stop.clicked[bool].connect(self._handle_video_rec_stop)
+
+        self.audio_rec_start.clicked[bool].connect(self._handle_audio_rec_start)
+        self.audio_rec_stop.clicked[bool].connect(self._handle_audio_rec_stop)
 
     def _setup_graph(self):
         path = os.path.join(self.rp.get_path('rqt_ocare'), 'resource', 'compass.png')
@@ -220,6 +358,30 @@ class OcareWidget(QWidget):
         self.lcdNumberDiffMode_2.display(self._current_stage)
 
     # def paintEvent(self, event):
+
+    def _handle_video_pub_start(self):
+        self.pipe_video_pub.set_state(Gst.State.PLAYING)
+
+    def _handle_video_pub_stop(self):
+        self.pipe_video_pub.set_state(Gst.State.PAUSED)
+
+    def _handle_video_rec_start(self):
+        self.pipe_video_pub.set_state(Gst.State.PLAYING)
+
+    def _handle_video_rec_stop(self):
+        self.pipe_video_pub.set_state(Gst.State.PAUSED)
+
+    def _handle_audio_pub_start(self):
+        self.pipe_audio_pub.set_state(Gst.State.PLAYING)
+
+    def _handle_audio_pub_stop(self):
+        self.pipe_audio_pub.set_state(Gst.State.PAUSED)
+
+    def _handle_audio_rec_start(self):
+        self.pipe_audio_rec.set_state(Gst.State.PLAYING)
+
+    def _handle_audio_rec_stop(self):
+        self.pipe_audio_rec.set_state(Gst.State.PAUSED)
 
     def _handle_start_clicked(self):
         # 1 is start

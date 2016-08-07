@@ -46,6 +46,11 @@ bool ArduModbus::init(char *_device, int _baud, int _stopbit, int _parity) {
     modbus_set_debug(m_ctx, OFF);
 #endif
 
+    // Setup the recovery Mode
+    modbus_set_error_recovery(m_ctx,
+                              (modbus_error_recovery_mode)(MODBUS_ERROR_RECOVERY_LINK |
+                              MODBUS_ERROR_RECOVERY_PROTOCOL));
+
     is_serial_state_ready = true;
     return true;
 }

@@ -4,7 +4,7 @@
 
 OcareRobot::OcareRobot() :
     m_modbus(),
-    m_arm("Robot left arm",sizeof("Robot left arm")),
+    m_arm("Robot right arm",sizeof("Robot right arm")),
     m_diff("Robot wheel",sizeof("Robot wheel")),
     m_arm1_pos(0.0),
     m_arm2_pos(0.0)
@@ -18,11 +18,11 @@ OcareRobot::OcareRobot() :
      *
      * For Arm Module:
      *
-     *      left_arm_base_link_joint:    The slider platform
+     *      right_arm_base_link_joint:    The slider platform
      *
-     *      left_arm_1_link_joint:       The slider platform to first arm link
+     *      right_arm_1_link_joint:       The slider platform to first arm link
      *
-     *      left_arm_2_link_joint:       The first arm link to second arm link
+     *      right_arm_2_link_joint:       The first arm link to second arm link
      *
      * For DiffWheel Module:
      *
@@ -34,16 +34,16 @@ OcareRobot::OcareRobot() :
 
     /* Registe the arm to hardware resource manager*/
     hardware_interface::JointStateHandle state_handle_left_base_arm(
-                "left_arm_base_link_joint", &pos[0], &vel[0], &eff[0]);
+                "right_arm_base_link_joint", &pos[0], &vel[0], &eff[0]);
     m_joint_state_interface.registerHandle(state_handle_left_base_arm);
 
-    hardware_interface::JointStateHandle state_handle_left_arm_1(
-                "left_arm_1_link_joint", &pos[1], &vel[1], &eff[1]);
-    m_joint_state_interface.registerHandle(state_handle_left_arm_1);
+    hardware_interface::JointStateHandle state_handle_right_arm_1(
+                "right_arm_1_link_joint", &pos[1], &vel[1], &eff[1]);
+    m_joint_state_interface.registerHandle(state_handle_right_arm_1);
 
-    hardware_interface::JointStateHandle state_handle_left_arm_2(
-                "left_arm_2_link_joint", &pos[2], &vel[2], &eff[2]);
-    m_joint_state_interface.registerHandle(state_handle_left_arm_2);
+    hardware_interface::JointStateHandle state_handle_right_arm_2(
+                "right_arm_2_link_joint", &pos[2], &vel[2], &eff[2]);
+    m_joint_state_interface.registerHandle(state_handle_right_arm_2);
 
     /* Registe the Left wheel and Right wheel to hardware resource manager*/
     hardware_interface::JointStateHandle state_handle_left_wheel(
@@ -62,11 +62,11 @@ OcareRobot::OcareRobot() :
      *
      * For Arm Module:
      *
-     *      left_arm_base_link_joint:    Joint Position Interface(Command type: Position)
+     *      right_arm_base_link_joint:    Joint Position Interface(Command type: Position)
      *
-     *      left_arm_1_link_joint:       Joint Position Interface(Command type: Position)
+     *      right_arm_1_link_joint:       Joint Position Interface(Command type: Position)
      *
-     *      left_arm_2_link_joint:       Joint Position Interface(Command type: Position)
+     *      right_arm_2_link_joint:       Joint Position Interface(Command type: Position)
      *
      * For DiffWheel Module:
      *
@@ -78,16 +78,16 @@ OcareRobot::OcareRobot() :
 
     /* registe wheel position joint command register*/
     hardware_interface::JointHandle position_handle_left_base_arm(
-                m_joint_state_interface.getHandle("left_arm_base_link_joint"), &cmd[0]);
+                m_joint_state_interface.getHandle("right_arm_base_link_joint"), &cmd[0]);
     m_joint_position_interfece.registerHandle(position_handle_left_base_arm);
 
-    hardware_interface::JointHandle position_handle_left_arm_1(
-                m_joint_state_interface.getHandle("left_arm_1_link_joint"), &cmd[1]);
-    m_joint_position_interfece.registerHandle(position_handle_left_arm_1);
+    hardware_interface::JointHandle position_handle_right_arm_1(
+                m_joint_state_interface.getHandle("right_arm_1_link_joint"), &cmd[1]);
+    m_joint_position_interfece.registerHandle(position_handle_right_arm_1);
 
-    hardware_interface::JointHandle position_handle_left_arm_2(
-                m_joint_state_interface.getHandle("left_arm_2_link_joint"), &cmd[2]);
-    m_joint_position_interfece.registerHandle(position_handle_left_arm_2);
+    hardware_interface::JointHandle position_handle_right_arm_2(
+                m_joint_state_interface.getHandle("right_arm_2_link_joint"), &cmd[2]);
+    m_joint_position_interfece.registerHandle(position_handle_right_arm_2);
 
     registerInterface(&m_joint_position_interfece);
 
@@ -120,6 +120,7 @@ void OcareRobot::init(ros::NodeHandle* _node) {
 
     m_modbus.registerHWModule(&m_diff);
     m_modbus.registerHWModule(&m_arm);
+
 
     m_modbus.connect_slave();
 }
@@ -256,15 +257,15 @@ void OcareRobot::command_callback(
  *
  * For Arm Module:
  *
- *      left_arm_base_link_joint:
+ *      right_arm_base_link_joint:
  *          - pos[0]:   position(rad) double
  *          - cmd[0]:   position(rad) double
  *
- *      left_arm_1_link_joint:       Joint Position Interface(Command type: Position)
+ *      right_arm_1_link_joint:       Joint Position Interface(Command type: Position)
  *          - pos[1]:   position(rad) double
  *          - cmd[1]:   position(rad) double
  *
- *      left_arm_2_link_joint:       Joint Position Interface(Command type: Position)
+ *      right_arm_2_link_joint:       Joint Position Interface(Command type: Position)
  *          - pos[2]:   position(rad) double
  *          - cmd[2]:   position(rad) double
  *
@@ -304,8 +305,60 @@ void OcareRobot::read(ros::Time time, ros::Duration period) {
         pos[0] = (SLIDER_CLOSE_POSITION + SLIDER_OPENED_POSITION) / 2;
         break;
     }
-    pos[1] = m_arm.m_read_l_motor1_degree;
-    pos[2] = m_arm.m_read_l_motor2_degree;
+
+    /************** Arm Mapping Information*******************
+     *
+     *  Arm1
+     *      0   :   520     RIGHT_MOTOR1_MIN_VALUE
+     *      90  :   844     RIGHT_MOTOR1_MAX_VALUE
+     *
+     *  Arm2
+     *      -90 :   815     RIGHT_MOTOR2_MAX_VALUE
+     *      0   :   513
+     *      90  :   211     RIGHT_MOTOR2_MIN_VALUE
+     *
+     * *****************************************************/
+
+
+    // Remapping the Arm1 pos
+    if(m_arm.m_read_l_motor1_degree > RIGHT_MOTOR1_MAX_VALUE)
+
+        pos[1] = -RIGHT_MOTOR1_MAX_DEG * M_PI / 180.0 ;
+
+    else if(m_arm.m_read_l_motor1_degree < RIGHT_MOTOR1_MIN_VALUE)
+
+        pos[1] = -RIGHT_MOTOR1_MIN_DEG * M_PI / 180.0 ;
+
+    else {
+
+        pos[1] = -(
+                RIGHT_MOTOR1_MIN_DEG +
+                (m_arm.m_read_l_motor1_degree - RIGHT_MOTOR1_MIN_DEG_VALUE) *
+                (RIGHT_MOTOR1_MAX_DEG - RIGHT_MOTOR1_MIN_DEG) /
+                (RIGHT_MOTOR1_MAX_DEG_VALUE - RIGHT_MOTOR1_MIN_DEG_VALUE)
+                    ) * M_PI / 180.0 ;
+
+    }
+
+    // Remapping the Arm2 pos
+    if(m_arm.m_read_l_motor2_degree > RIGHT_MOTOR2_MAX_VALUE)
+
+        pos[2] = -RIGHT_MOTOR2_MAX_DEG * M_PI / 180.0 - 0.5 * M_PI;
+
+    else if(m_arm.m_read_l_motor2_degree < RIGHT_MOTOR2_MIN_VALUE)
+
+        pos[2] = -RIGHT_MOTOR2_MIN_DEG * M_PI / 180.0 - 0.5 * M_PI;
+
+    else {
+
+        pos[2] = -(
+                RIGHT_MOTOR2_MIN_DEG +
+                (m_arm.m_read_l_motor2_degree - RIGHT_MOTOR2_MIN_DEG_VALUE) *
+                (RIGHT_MOTOR2_MAX_DEG - RIGHT_MOTOR2_MIN_DEG) /
+                (RIGHT_MOTOR2_MAX_DEG_VALUE - RIGHT_MOTOR2_MIN_DEG_VALUE)
+                    ) * M_PI / 180.0 - 0.5 * M_PI;
+
+    }
 
     // Sync data from DiffModbus to ROS
     // Current no data can read

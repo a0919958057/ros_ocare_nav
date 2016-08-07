@@ -8,9 +8,9 @@ ocare:
   pose_fuzzy_controller:
     type: ocare_controllers/FuzzyController
     arms:
-      - left_arm_base_link_joint
-      - left_arm_1_link_joint
-      - left_arm_2_link_joint
+      - right_arm_base_link_joint
+      - right_arm_1_link_joint
+      - right_arm_2_link_joint
     wheels:
       - base_left_wheel_joint
       - base_right_wheel_joint

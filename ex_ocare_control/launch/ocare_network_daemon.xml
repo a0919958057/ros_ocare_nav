@@ -1,0 +1,6 @@
+<launch>
+
+    <!-- Network daemon node-->
+    <node name="network_daemon_node" pkg="master_discovery_fkie" type="master_discovery" required="true" />
+
+</launch>
