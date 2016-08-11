@@ -43,8 +43,8 @@ int  fg_mode(-1);
 #define SIZE_DATA_RECOARD (10)
 #define CONVERG_THROSHOLD (M_PI * 5.0/180.0)
 
-#define TASK_8_LENGTH_FRONT     (0.5)
-#define TASK_10_LENGTH_RIGHT    (0.45)
+#define TASK_8_LENGTH_FRONT     (0.6)
+#define TASK_10_LENGTH_RIGHT    (0.5)
 #define TASK_13_LENGTH_FRONT    (0.55)
 #define TASK_13_LENGTH_RIGHT    (0.4)
 #define TASK_15_LENGTH_RIGHT    (0.55)
@@ -344,17 +344,17 @@ void callback_control(const std_msgs::Int32ConstPtr &msg) {
 
 void callback_laser(const sensor_msgs::LaserScanConstPtr &msg) {
     double length_sum(0);
-    for(int i=0;i<10;i++)
+    for(int i=84 - 5 ;i< 84 + 5;i++)
      length_sum += msg.get()->ranges[i];
     right_length = length_sum / 10;
 
     length_sum = 0;
-    for(int i=250;i<260;i++)
+    for(int i= 84 + 256 - 5;i< 84 + 256 + 5;i++)
      length_sum += msg.get()->ranges[i];
     front_length = length_sum / 10;
 
     length_sum = 0;
-    for(int i=500;i<510;i++)
+    for(int i= 84 + 512 - 5;i< 84 + 512 + 5;i++)
      length_sum += msg.get()->ranges[i];
     left_length = length_sum / 10;
 
@@ -378,7 +378,8 @@ void callback_sensor(const std_msgs::UInt16MultiArrayConstPtr &msg) {
 
 }
 
-int main(int argc, char** argv) {
+int
+main(int argc, char** argv) {
 
 #ifdef __arm__
     if( wiringPiSetup() == -1)
@@ -1178,7 +1179,7 @@ void do_button_tesk(int _stage, std_msgs::UInt16MultiArray* _mode_msg, geometry_
         _mode_msg->data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
         _mode_msg->data.push_back((uint16_t)DiffModbus::WHITE_CMD);
         _twist_msg->linear.x = 30;
-        _twist_msg->angular.z = M_PI * -170/180.0;
+        _twist_msg->angular.z = M_PI * 180/180.0;
         break;
     }
     return;
