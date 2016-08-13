@@ -1,0 +1,37 @@
+<launch>
+
+	<!-- urdf xml robot description loaded on the Parameter Server-->
+	<param name="robot_description" command="$(find xacro)/xacro $(find labrob_description)/urdf/ocare_realworld.urdf.xacro" />
+
+	<!-- Load joint controller configurations from YAML file to parameter server -->
+	<rosparam file="$(find ex_ocare_control)/config/controller_config.yaml" command="load"/>
+
+	<!-- main robot hardware interface handler node -->
+	<node name="ocare_hw_node" pkg="ex_ocare_control" type="ex_ocare_control_node"  required="false" output="screen" />
+
+	<node name="hokuyo" pkg="hokuyo_node" type="hokuyo_node" required="true" output="screen" >
+		<param name="frame_id" type="str" value="laser"/>
+		<param name="port" type="string" value="/dev/hokuyo"/>
+		<param name="min_ang" type="double" value="-2.08621382713"/>
+		<param name="max_ang" type="double" value="2.09234976768"/>
+		<param name="intensity" type="bool" value="false"/>
+	</node>
+
+	<node name="mpu6050" pkg="mpu6050_serial_to_imu" type="mpu6050_serial_to_imu_node" output="screen" >
+		<param name="port" type="string" value="/dev/arduino"/>
+	</node>
+
+
+	<!-- load the controllers -->
+	<node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
+	output="screen" ns="/ocare" 
+	args="pose_fuzzy_controller joint_state_controller"/>
+
+	<!--node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" /-->
+	<node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher" >
+		 <!-- urdf xml robot description loaded on the Parameter Server-->
+		 <param name="robot_description" command="$(find xacro)/xacro $(find labrob_description)/urdf/ocare_realworld.urdf.xacro" />
+		 <remap from="/joint_states" to="/ocare/joint_states" />
+	</node>
+
+</launch>

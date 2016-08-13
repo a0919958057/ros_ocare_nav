@@ -11,7 +11,7 @@
 
 
 ocare_controllers::FuzzyController::FuzzyController() :
-    m_roll(0.0), m_pitch(0.0), m_yaw(0.0), m_cmd_vel(0.0), m_cmd_yaw(0.0), k_p(324.35), k_d(7.8) {
+    m_roll(0.0), m_pitch(0.0), m_yaw(0.0), m_cmd_vel(0.0), m_cmd_yaw(0.0), k_p(244.51), k_d(1.5) {
 }
 
 ocare_controllers::FuzzyController::~FuzzyController() {
@@ -96,7 +96,7 @@ void ocare_controllers::FuzzyController::update(const ros::Time &time, const ros
     err_old = err;
     err = m_cmd_yaw - m_yaw;
 
-    double error_dot = (err - err_old) / duration.toSec();
+    double error_dot = cot_angle(err - err_old) / duration.toSec();
 
     double err_modify = cot_angle(err);
 
