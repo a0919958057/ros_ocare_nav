@@ -54,7 +54,14 @@ class OcareWidget(QWidget):
 
         self.rp = rospkg.RosPack()
 
-        ui_file = os.path.join(self.rp.get_path('rqt_ocare'), 'resource', 'ocare_ui.ui')
+        import platform
+        if(platform.machine() == 'x86_64'):
+            # If there is PC
+            ui_file = os.path.join(self.rp.get_path('rqt_ocare'), 'resource', 'ocare_ui_pc.ui')
+        else:
+            # If there is raspberry Pi
+            ui_file = os.path.join(self.rp.get_path('rqt_ocare'), 'resource', 'ocare_ui.ui')
+
         
         loadUi(ui_file, self)
 
