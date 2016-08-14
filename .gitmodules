@@ -1,0 +1,6 @@
+[submodule "arduino_src/ocare_arduino_diff"]
+	path = arduino_src/ocare_arduino_diff
+	url = https://github.com/a0919958057/ocare_diff_wheel.git
+[submodule "arduino_src/ocare_arduino_arm"]
+	path = arduino_src/ocare_arduino_arm
+	url = https://github.com/JerryKAOPIG/Ocare_ardu_arm.git
