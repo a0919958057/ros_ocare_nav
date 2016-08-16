@@ -34,117 +34,23 @@
       <x>10</x>
       <y>30</y>
       <width>371</width>
-      <height>141</height>
+      <height>151</height>
      </rect>
     </property>
     <layout class="QGridLayout" name="gridLayout">
-     <item row="4" column="0">
-      <widget class="QLabel" name="label_3">
+     <item row="4" column="2">
+      <widget class="QLCDNumber" name="lcdNumberDiffMode_2">
        <property name="sizePolicy">
-        <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+        <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
          <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
+         <verstretch>20</verstretch>
         </sizepolicy>
        </property>
        <property name="minimumSize">
         <size>
          <width>0</width>
-         <height>0</height>
+         <height>20</height>
         </size>
-       </property>
-       <property name="font">
-        <font>
-         <pointsize>11</pointsize>
-        </font>
-       </property>
-       <property name="text">
-        <string>Diff Mode</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="2">
-      <layout class="QVBoxLayout" name="verticalLayout">
-       <item>
-        <widget class="QRadioButton" name="btnModeAuto">
-         <property name="font">
-          <font>
-           <pointsize>11</pointsize>
-          </font>
-         </property>
-         <property name="text">
-          <string>Auto Control</string>
-         </property>
-         <property name="checked">
-          <bool>true</bool>
-         </property>
-         <attribute name="buttonGroup">
-          <string notr="true">buttonGroup_2</string>
-         </attribute>
-        </widget>
-       </item>
-       <item>
-        <widget class="QRadioButton" name="btnModeRemote">
-         <property name="font">
-          <font>
-           <pointsize>11</pointsize>
-          </font>
-         </property>
-         <property name="text">
-          <string>Remote Control</string>
-         </property>
-         <attribute name="buttonGroup">
-          <string notr="true">buttonGroup_2</string>
-         </attribute>
-        </widget>
-       </item>
-      </layout>
-     </item>
-     <item row="4" column="1">
-      <widget class="QLCDNumber" name="lcdNumberDiffMode">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-         <horstretch>25</horstretch>
-         <verstretch>50</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="minimumSize">
-        <size>
-         <width>0</width>
-         <height>19</height>
-        </size>
-       </property>
-       <property name="sizeIncrement">
-        <size>
-         <width>0</width>
-         <height>0</height>
-        </size>
-       </property>
-       <property name="baseSize">
-        <size>
-         <width>0</width>
-         <height>0</height>
-        </size>
-       </property>
-       <property name="styleSheet">
-        <string notr="true"/>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="0">
-      <widget class="QLabel" name="label">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="font">
-        <font>
-         <pointsize>11</pointsize>
-        </font>
-       </property>
-       <property name="text">
-        <string>Robot Stat</string>
        </property>
       </widget>
      </item>
@@ -218,30 +124,6 @@
        </property>
       </widget>
      </item>
-     <item row="1" column="1">
-      <widget class="QCheckBox" name="checkBoxArmOpen">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="minimumSize">
-        <size>
-         <width>0</width>
-         <height>0</height>
-        </size>
-       </property>
-       <property name="font">
-        <font>
-         <pointsize>13</pointsize>
-        </font>
-       </property>
-       <property name="text">
-        <string>Open</string>
-       </property>
-      </widget>
-     </item>
      <item row="0" column="1">
       <widget class="QPushButton" name="pushButtonStart">
        <property name="sizePolicy">
@@ -275,28 +157,163 @@
        </property>
       </widget>
      </item>
-     <item row="4" column="2">
-      <widget class="QLCDNumber" name="lcdNumberDiffMode_2">
+     <item row="0" column="2">
+      <layout class="QVBoxLayout" name="verticalLayout">
+       <item>
+        <widget class="QRadioButton" name="btnModeAuto">
+         <property name="font">
+          <font>
+           <pointsize>11</pointsize>
+          </font>
+         </property>
+         <property name="text">
+          <string>Auto Control</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+         <attribute name="buttonGroup">
+          <string notr="true">buttonGroup_2</string>
+         </attribute>
+        </widget>
+       </item>
+       <item>
+        <widget class="QRadioButton" name="btnModeRemote">
+         <property name="font">
+          <font>
+           <pointsize>11</pointsize>
+          </font>
+         </property>
+         <property name="text">
+          <string>Remote Control</string>
+         </property>
+         <attribute name="buttonGroup">
+          <string notr="true">buttonGroup_2</string>
+         </attribute>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item row="0" column="0">
+      <widget class="QLabel" name="label">
        <property name="sizePolicy">
-        <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+        <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
          <horstretch>0</horstretch>
-         <verstretch>20</verstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>11</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>Robot Stat</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <layout class="QVBoxLayout" name="verticalLayout_4">
+       <item>
+        <widget class="QCheckBox" name="checkBoxArmOpen">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="font">
+          <font>
+           <pointsize>13</pointsize>
+          </font>
+         </property>
+         <property name="text">
+          <string>Open</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="checkBoxLeftSlider">
+         <property name="text">
+          <string>Left slider</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="checkBoxRightSlider">
+         <property name="text">
+          <string>Right slider</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item row="4" column="0">
+      <widget class="QLabel" name="label_3">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
         </sizepolicy>
        </property>
        <property name="minimumSize">
         <size>
          <width>0</width>
-         <height>20</height>
+         <height>0</height>
         </size>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>11</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>Diff Mode</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="1">
+      <widget class="QLCDNumber" name="lcdNumberDiffMode">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+         <horstretch>25</horstretch>
+         <verstretch>50</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>19</height>
+        </size>
+       </property>
+       <property name="sizeIncrement">
+        <size>
+         <width>0</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="baseSize">
+        <size>
+         <width>0</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true"/>
        </property>
       </widget>
      </item>
     </layout>
    </widget>
-   <zorder>gridLayoutWidget</zorder>
-   <zorder>tabWidget</zorder>
-   <zorder>tabWidget</zorder>
-   <zorder>tabWidget</zorder>
   </widget>
   <widget class="QTabWidget" name="tabWidget">
    <property name="geometry">
@@ -1259,7 +1276,7 @@ QSlider::handle:horizontal {
         <x>10</x>
         <y>20</y>
         <width>191</width>
-        <height>61</height>
+        <height>89</height>
        </rect>
       </property>
       <layout class="QGridLayout" name="gridLayout_2">
@@ -1490,12 +1507,6 @@ QSlider::handle:horizontal {
        <set>Qt::AlignCenter</set>
       </property>
      </widget>
-     <zorder>gridLayoutWidget_3</zorder>
-     <zorder>refreshTopicStatus</zorder>
-     <zorder>orientReset</zorder>
-     <zorder>orientReset</zorder>
-     <zorder>lcdNumberOrient</zorder>
-     <zorder>graphicsViewOrient</zorder>
     </widget>
    </widget>
    <widget class="QWidget" name="tab_3">
@@ -1684,7 +1695,7 @@ QSlider::handle:vertical {
         <x>10</x>
         <y>20</y>
         <width>91</width>
-        <height>141</height>
+        <height>174</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -1827,7 +1838,7 @@ QSlider::handle:vertical {
         <x>10</x>
         <y>20</y>
         <width>91</width>
-        <height>141</height>
+        <height>174</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_5">

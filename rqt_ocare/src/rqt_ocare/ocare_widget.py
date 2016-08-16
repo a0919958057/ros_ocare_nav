@@ -33,8 +33,15 @@ class OcareWidget(QWidget):
     MODE_STOP = -1
 
     # Arm Mode
-    MODE_ARM_SLIDER_HOME = -1
-    MODE_ARM_SLIDER_OPEN = 1
+
+    MODE_ARM_R_SLIDER_CMD_MASK = 0b01000000
+    MODE_ARM_R_SLIDER_HOME = (0 << 6)
+    MODE_ARM_R_SLIDER_OPEN = (1 << 6)
+
+    MODE_ARM_L_SLIDER_CMD_MASK = 0b10000000
+    MODE_ARM_L_SLIDER_HOME = (0 << 7)
+    MODE_ARM_L_SLIDER_OPEN = (1 << 7)
+
     MODE_ARM_HOME_POSE = -2
     MODE_ARM_BTN_POSE = 2
     MODE_ARM_FREE_CONTROL = 3
@@ -55,7 +62,7 @@ class OcareWidget(QWidget):
         self.rp = rospkg.RosPack()
 
         import platform
-        if(platform.machine() == 'x86_64'):
+        if( platform.machine() == 'x86_64' ):
             # If there is PC
             ui_file = os.path.join(self.rp.get_path('rqt_ocare'), 'resource', 'ocare_ui_pc.ui')
         else:
@@ -66,7 +73,6 @@ class OcareWidget(QWidget):
         loadUi(ui_file, self)
 
         self.setObjectName('OcareWidget')
-
         self.progressBarList = [self.progressBar_1,
                            self.progressBar_2,
                            self.progressBar_3,
@@ -420,11 +426,21 @@ class OcareWidget(QWidget):
         self.lcdNumberDiffMode.display(0)
 
     def _handle_arm_open(self):
+
+
         msg = Int32()
+        msg.data = 0
         if self.checkBoxArmOpen.isChecked():
-            msg.data = self.MODE_ARM_SLIDER_OPEN
+            if (self.checkBoxLeftSlider.isChecked()):
+                msg.data |= self.MODE_ARM_L_SLIDER_OPEN
+            if (self.checkBoxRightSlider.isChecked()):
+                msg.data |= self.MODE_ARM_R_SLIDER_OPEN
         else:
-            msg.data = self.MODE_ARM_SLIDER_HOME
+            if (self.checkBoxLeftSlider.isChecked()):
+                msg.data |= self.MODE_ARM_L_SLIDER_HOME
+            if (self.checkBoxRightSlider.isChecked()):
+                msg.data |= self.MODE_ARM_R_SLIDER_HOME
+
 
         self._arm_mode_pub.publish(msg)
 

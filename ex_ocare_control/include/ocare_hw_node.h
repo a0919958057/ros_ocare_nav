@@ -25,7 +25,7 @@
 #include "ardumodbus.h"
 
 #define SLIDER_CLOSE_POSITION               (0)
-#define SLIDER_OPENED_POSITION              (0.15)
+#define SLIDER_OPENED_POSITION              (-0.08)
 
 /******************* ARM CONFIG ********************/
 
@@ -105,9 +105,9 @@ private:
     hardware_interface::EffortJointInterface m_joint_effort_interfece;
 
     double cmd[3];
-    double pos[3];
-    double vel[3];
-    double eff[3];
+    double pos_r[3];
+    double vel_r[3];
+    double eff_r[3];
 
     double wheel_cmd[2];
     double wheel_pos[2];

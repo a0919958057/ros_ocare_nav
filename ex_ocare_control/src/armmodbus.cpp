@@ -3,16 +3,16 @@
 
 ArmModbus::ArmModbus(char* _name, size_t _length) :
     HWModule(_name, _length),
-    m_l_motor1_degree(MOTOR1_CMD_INIT_VALUE),
-    m_l_motor2_degree(MOTOR2_CMD_INIT_VALUE),
-    m_l_catch_level(CATCH_LEVEL_CMD_INIT_VALUE),
-    m_l_mode(ArmModeCMD::ARM_HOME_CMD),
-    m_l_slider_mode(SliderStateCMD::SLIDER_CLOSE_CMD),
-    m_read_l_motor1_degree(MOTOR1_CMD_INIT_VALUE),
-    m_read_l_motor2_degree(MOTOR2_CMD_INIT_VALUE),
-    m_read_l_catch_level(CATCH_LEVEL_CMD_INIT_VALUE),
-    m_read_l_mode(ArmMode::ARM_HOME),
-    m_read_l_slider_mode(SliderState::SLIDER_HOME)
+    m_r_motor1_degree(MOTOR1_CMD_INIT_VALUE),
+    m_r_motor2_degree(MOTOR2_CMD_INIT_VALUE),
+    m_r_catch_level(CATCH_LEVEL_CMD_INIT_VALUE),
+    m_r_mode(ArmModeCMD::ARM_HOME_CMD),
+    m_r_slider_mode(SLIDER_LC_CMD | SLIDER_RC_CMD),
+    m_read_r_motor1_degree(MOTOR1_CMD_INIT_VALUE),
+    m_read_r_motor2_degree(MOTOR2_CMD_INIT_VALUE),
+    m_read_r_catch_level(CATCH_LEVEL_CMD_INIT_VALUE),
+    m_read_r_mode(ArmMode::ARM_HOME),
+    m_read_r_slider_mode(SLIDER_L_OPENED | SLIDER_R_OPENED)
     {
 
     // Set the slave ID
@@ -39,11 +39,11 @@ bool ArmModbus::write() {
      *
      **********************************************/
     // Note there is a continue register
-    reg[EFFORT_CATCH_LEVEL - REG_CMD_START]     = m_l_catch_level;
-    reg[CMD_LEFT_MOTOR1_DEGREE - REG_CMD_START] = m_l_motor1_degree;
-    reg[CMD_LEFT_MOTOR2_DEGREE - REG_CMD_START] = m_l_motor2_degree;
-    reg[CMD_SLIDER_STATE - REG_CMD_START]       = static_cast<uint16_t>(m_l_slider_mode);
-    reg[CMD_ARM_MODE - REG_CMD_START]           = static_cast<uint16_t>(m_l_mode);
+    reg[EFFORT_CATCH_LEVEL - REG_CMD_START]     = m_r_catch_level;
+    reg[CMD_LEFT_MOTOR1_DEGREE - REG_CMD_START] = m_r_motor1_degree;
+    reg[CMD_LEFT_MOTOR2_DEGREE - REG_CMD_START] = m_r_motor2_degree;
+    reg[CMD_SLIDER_STATE - REG_CMD_START]       = m_r_slider_mode;
+    reg[CMD_ARM_MODE - REG_CMD_START]           = m_r_mode;
 
     int num = modbus_write_registers(
                 m_ctx, REG_CMD_START, REG_CMD_END-REG_CMD_START+1, reg);
@@ -92,11 +92,11 @@ bool ArmModbus::read() {
      *
      **********************************************/
 
-    m_read_l_motor1_degree  = reg[LEFT_MOTOR1_DEGREE];
-    m_read_l_motor2_degree  = reg[LEFT_MOTOR2_DEGREE];
-    m_read_l_catch_level    = reg[EFFORT_CATCH_LEVEL];
-    m_read_l_slider_mode    = SliderState(reg[SLIDER_STATE]);
-    m_read_l_mode           = ArmMode(reg[ARM_MODE]);
+    m_read_r_motor1_degree  = reg[LEFT_MOTOR1_DEGREE];
+    m_read_r_motor2_degree  = reg[LEFT_MOTOR2_DEGREE];
+    m_read_r_catch_level    = reg[EFFORT_CATCH_LEVEL];
+    m_read_r_slider_mode    = reg[SLIDER_STATE];
+    m_read_r_mode           = reg[ARM_MODE];
 
     return true;
 }

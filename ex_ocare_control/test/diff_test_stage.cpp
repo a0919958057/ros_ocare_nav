@@ -84,8 +84,14 @@ int  fg_mode(-1);
 #define MODE_STOP           (-1)
 
 // Arm Mode
-#define MODE_ARM_SLIDER_HOME        (-1)
-#define MODE_ARM_SLIDER_OPEN        (1)
+#define MODE_ARM_R_SLIDER_CMD_MASK    (1u << 6)
+#define MODE_ARM_R_SLIDER_HOME        (0u << 6)
+#define MODE_ARM_R_SLIDER_OPEN        (1u << 6)
+
+#define MODE_ARM_L_SLIDER_CMD_MASK    (1u << 7)
+#define MODE_ARM_L_SLIDER_HOME        (0u << 7)
+#define MODE_ARM_L_SLIDER_OPEN        (1u << 7)
+
 #define MODE_ARM_HOME_POSE          (-2)
 #define MODE_ARM_BTN_POSE           (2)
 #define MODE_ARM_FREE_CONTROL       (3)
@@ -100,7 +106,7 @@ double orient(0);
 int stage(0);
 
 uint16_t arm_mode = ArmModbus::ArmModeCMD::ARM_HOME_CMD;
-uint16_t slider_mode = ArmModbus::SliderStateCMD::SLIDER_CLOSE_CMD;
+uint16_t slider_mode = 0;
 uint16_t catch_level = 0;
 
 bool sensor_ready(false);
@@ -312,12 +318,6 @@ void callback_stage_cmd(const std_msgs::Int32ConstPtr &msg) {
 void callback_arm_cmd(const std_msgs::Int32ConstPtr &msg) {
 
     switch(msg->data) {
-    case MODE_ARM_SLIDER_HOME:
-        slider_mode = ArmModbus::SliderStateCMD::SLIDER_CLOSE_CMD;
-        break;
-    case MODE_ARM_SLIDER_OPEN:
-        slider_mode = ArmModbus::SliderStateCMD::SLIDER_OPEN_CMD;
-        break;
     case MODE_ARM_HOME_POSE:
         arm_mode = ArmModbus::ArmModeCMD::ARM_HOME_CMD;
         break;
@@ -326,6 +326,27 @@ void callback_arm_cmd(const std_msgs::Int32ConstPtr &msg) {
         break;
     case MODE_ARM_FREE_CONTROL:
         arm_mode = ArmModbus::ArmModeCMD::ARM_FREE_CONTROLL_CMD;
+        break;
+    default:
+
+        if( (MODE_ARM_R_SLIDER_CMD_MASK & msg->data) != 0x00) {
+            slider_mode &= ~SLIDER_RIGHT_CMD_MASK;
+            slider_mode |= ArmModbus::SLIDER_RO_CMD;
+        }
+        else {
+            slider_mode &= ~SLIDER_RIGHT_CMD_MASK;
+            slider_mode |= ArmModbus::SLIDER_RC_CMD;
+        }
+
+        if( (MODE_ARM_L_SLIDER_CMD_MASK & msg->data) != 0x00) {
+            slider_mode &= ~SLIDER_LEFT_CMD_MASK;
+            slider_mode |= ArmModbus::SLIDER_LO_CMD;
+        }
+        else {
+            slider_mode &= ~SLIDER_LEFT_CMD_MASK;
+            slider_mode |= ArmModbus::SLIDER_LC_CMD;
+        }
+
         break;
 
     }

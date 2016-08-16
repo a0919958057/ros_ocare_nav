@@ -9,6 +9,9 @@ OcareRobot::OcareRobot() :
     m_arm1_pos(0.0),
     m_arm2_pos(0.0)
     {
+
+    memset(pos_r, 0, sizeof(int));
+
     ROS_INFO("Create HWModuble Object.");
 
     ROS_INFO("Create JointStateHandle...");
@@ -33,16 +36,16 @@ OcareRobot::OcareRobot() :
      * ******************************************************************/
 
     /* Registe the arm to hardware resource manager*/
-    hardware_interface::JointStateHandle state_handle_left_base_arm(
-                "right_arm_base_link_joint", &pos[0], &vel[0], &eff[0]);
-    m_joint_state_interface.registerHandle(state_handle_left_base_arm);
+    hardware_interface::JointStateHandle state_handle_right_base_arm(
+                "right_arm_base_link_joint", &pos_r[0], &vel_r[0], &eff_r[0]);
+    m_joint_state_interface.registerHandle(state_handle_right_base_arm);
 
     hardware_interface::JointStateHandle state_handle_right_arm_1(
-                "right_arm_1_link_joint", &pos[1], &vel[1], &eff[1]);
+                "right_arm_1_link_joint", &pos_r[1], &vel_r[1], &eff_r[1]);
     m_joint_state_interface.registerHandle(state_handle_right_arm_1);
 
     hardware_interface::JointStateHandle state_handle_right_arm_2(
-                "right_arm_2_link_joint", &pos[2], &vel[2], &eff[2]);
+                "right_arm_2_link_joint", &pos_r[2], &vel_r[2], &eff_r[2]);
     m_joint_state_interface.registerHandle(state_handle_right_arm_2);
 
     /* Registe the Left wheel and Right wheel to hardware resource manager*/
@@ -208,7 +211,7 @@ void OcareRobot::arm_cmd_callback(const std_msgs::UInt16MultiArrayConstPtr _mess
     case ArmModbus::ArmModeCMD::ARM_FREE_CONTROLL_CMD:
 
         // If the mode is exist then set mode
-        m_arm.m_l_mode = ArmModbus::ArmModeCMD(arm_mode);
+        m_arm.m_r_mode = ArmModbus::ArmModeCMD(arm_mode);
 
         break;
     default:
@@ -216,21 +219,12 @@ void OcareRobot::arm_cmd_callback(const std_msgs::UInt16MultiArrayConstPtr _mess
         break;
     }
 
-    switch(ArmModbus::SliderStateCMD(slider_mode)) {
-    case ArmModbus::SliderStateCMD::SLIDER_OPEN_CMD:
-    case ArmModbus::SliderStateCMD::SLIDER_CLOSE_CMD:
+    // The sldier_mode is a bits operation variable, don't need to check now
+    m_arm.m_r_slider_mode = slider_mode;
 
-        // If the mode is exist then set mode
-        m_arm.m_l_slider_mode = ArmModbus::SliderStateCMD(slider_mode);
-
-        break;
-    default:
-        ROS_ERROR("Can't reslove the SliderMode type !\n");
-        break;
-    }
 
     if(catch_level >= 0 && catch_level <= 100) {
-        m_arm.m_l_catch_level = catch_level;
+        m_arm.m_r_catch_level = catch_level;
     }
 
 }
@@ -291,18 +285,18 @@ void OcareRobot::read(ros::Time time, ros::Duration period) {
     publish_sensor_data();
 
     // Sync data from ArmModbus to ROS
-    switch (m_arm.m_l_slider_mode) {
-    case ArmModbus::SliderState::SLIDER_HOME:
-        pos[0] = SLIDER_CLOSE_POSITION;
+    switch (m_arm.m_read_r_slider_mode & SLIDER_RIGHT_CMD_MASK) {
+    case ArmModbus::SliderState::SLIDER_R_HOME:
+        pos_r[0] = SLIDER_CLOSE_POSITION;
         break;
-    case ArmModbus::SliderState::SLIDER_OPENING:
-        pos[0] = (SLIDER_CLOSE_POSITION + SLIDER_OPENED_POSITION) / 2;
+    case ArmModbus::SliderState::SLIDER_R_OPENING:
+        pos_r[0] = (SLIDER_CLOSE_POSITION + SLIDER_OPENED_POSITION) / 2.0;
         break;
-    case ArmModbus::SliderState::SLIDER_OPENED:
-        pos[0] = SLIDER_OPENED_POSITION;
+    case ArmModbus::SliderState::SLIDER_R_OPENED:
+        pos_r[0] = SLIDER_OPENED_POSITION;
         break;
-    case ArmModbus::SliderState::SLIDER_RETURNING:
-        pos[0] = (SLIDER_CLOSE_POSITION + SLIDER_OPENED_POSITION) / 2;
+    case ArmModbus::SliderState::SLIDER_R_RETURNING:
+        pos_r[0] = (SLIDER_CLOSE_POSITION + SLIDER_OPENED_POSITION) / 2.0;
         break;
     }
 
@@ -321,19 +315,19 @@ void OcareRobot::read(ros::Time time, ros::Duration period) {
 
 
     // Remapping the Arm1 pos
-    if(m_arm.m_read_l_motor1_degree > RIGHT_MOTOR1_MAX_VALUE)
+    if(m_arm.m_read_r_motor1_degree > RIGHT_MOTOR1_MAX_VALUE)
 
-        pos[1] = -RIGHT_MOTOR1_MAX_DEG * M_PI / 180.0 ;
+        pos_r[1] = -RIGHT_MOTOR1_MAX_DEG * M_PI / 180.0 ;
 
-    else if(m_arm.m_read_l_motor1_degree < RIGHT_MOTOR1_MIN_VALUE)
+    else if(m_arm.m_read_r_motor1_degree < RIGHT_MOTOR1_MIN_VALUE)
 
-        pos[1] = -RIGHT_MOTOR1_MIN_DEG * M_PI / 180.0 ;
+        pos_r[1] = -RIGHT_MOTOR1_MIN_DEG * M_PI / 180.0 ;
 
     else {
 
-        pos[1] = -(
+        pos_r[1] = -(
                 RIGHT_MOTOR1_MIN_DEG +
-                (m_arm.m_read_l_motor1_degree - RIGHT_MOTOR1_MIN_DEG_VALUE) *
+                (m_arm.m_read_r_motor1_degree - RIGHT_MOTOR1_MIN_DEG_VALUE) *
                 (RIGHT_MOTOR1_MAX_DEG - RIGHT_MOTOR1_MIN_DEG) /
                 (RIGHT_MOTOR1_MAX_DEG_VALUE - RIGHT_MOTOR1_MIN_DEG_VALUE)
                     ) * M_PI / 180.0 ;
@@ -341,19 +335,19 @@ void OcareRobot::read(ros::Time time, ros::Duration period) {
     }
 
     // Remapping the Arm2 pos
-    if(m_arm.m_read_l_motor2_degree > RIGHT_MOTOR2_MAX_VALUE)
+    if(m_arm.m_read_r_motor2_degree > RIGHT_MOTOR2_MAX_VALUE)
 
-        pos[2] = -RIGHT_MOTOR2_MAX_DEG * M_PI / 180.0 - 0.5 * M_PI;
+        pos_r[2] = -RIGHT_MOTOR2_MAX_DEG * M_PI / 180.0 - 0.5 * M_PI;
 
-    else if(m_arm.m_read_l_motor2_degree < RIGHT_MOTOR2_MIN_VALUE)
+    else if(m_arm.m_read_r_motor2_degree < RIGHT_MOTOR2_MIN_VALUE)
 
-        pos[2] = -RIGHT_MOTOR2_MIN_DEG * M_PI / 180.0 - 0.5 * M_PI;
+        pos_r[2] = -RIGHT_MOTOR2_MIN_DEG * M_PI / 180.0 - 0.5 * M_PI;
 
     else {
 
-        pos[2] = -(
+        pos_r[2] = -(
                 RIGHT_MOTOR2_MIN_DEG +
-                (m_arm.m_read_l_motor2_degree - RIGHT_MOTOR2_MIN_DEG_VALUE) *
+                (m_arm.m_read_r_motor2_degree - RIGHT_MOTOR2_MIN_DEG_VALUE) *
                 (RIGHT_MOTOR2_MAX_DEG - RIGHT_MOTOR2_MIN_DEG) /
                 (RIGHT_MOTOR2_MAX_DEG_VALUE - RIGHT_MOTOR2_MIN_DEG_VALUE)
                     ) * M_PI / 180.0 - 0.5 * M_PI;
@@ -425,8 +419,8 @@ void OcareRobot::write(ros::Time time, ros::Duration period) {
     }
 
 
-    m_arm.m_l_motor1_degree = new_arm1_pos;
-    m_arm.m_l_motor2_degree = new_arm2_pos;
+    m_arm.m_r_motor1_degree = new_arm1_pos;
+    m_arm.m_r_motor2_degree = new_arm2_pos;
 
     // Sync data from ROS to DiffModbus
     m_diff.m_left_wheel_torque = wheel_cmd[0];

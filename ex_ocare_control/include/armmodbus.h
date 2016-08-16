@@ -41,27 +41,45 @@ public:
       CMD_ARM_MODE
     };
 
+
     /******Defination of the Slider state
      * SLIDER_HOME :       Slider at Home position
      * SLIDER_OPENING:     Slider Opening now
      * SLIDER_OPENED:      Slider is Opened, the arm can work around now
      * SLIDER_RETURNING:   Slider is Returning to HOME now
      * **************************/
+#define SLIDER_LEFT_STATE_MASK          (0x0f)
+#define SLIDER_LEFT_STATUS_BIT_SHIFT    (0)
+
+#define SLIDER_RIGHT_STATE_MASK         (0xf0)
+#define SLIDER_RIGHT_STATUS_BIT_SHIFT   (4)
+
     enum SliderState  {
-        SLIDER_HOME,
-        SLIDER_OPENING,
-        SLIDER_OPENED,
-        SLIDER_RETURNING
+        SLIDER_L_HOME       = (1u << SLIDER_LEFT_STATUS_BIT_SHIFT),
+        SLIDER_L_OPENING    = (2u << SLIDER_LEFT_STATUS_BIT_SHIFT),
+        SLIDER_L_OPENED     = (3u << SLIDER_LEFT_STATUS_BIT_SHIFT),
+        SLIDER_L_RETURNING  = (4u << SLIDER_LEFT_STATUS_BIT_SHIFT),
+        SLIDER_R_HOME       = (1u << SLIDER_RIGHT_STATUS_BIT_SHIFT),
+        SLIDER_R_OPENING    = (2u << SLIDER_RIGHT_STATUS_BIT_SHIFT),
+        SLIDER_R_OPENED     = (3u << SLIDER_RIGHT_STATUS_BIT_SHIFT),
+        SLIDER_R_RETURNING  = (4u << SLIDER_RIGHT_STATUS_BIT_SHIFT)
     };
 
     /******Defination of the Slider Command
-     * SLIDER_OPEN_CMD :           Open the slider to the right position
-     * SLIDER_CLOSE_CMD:           Close the slider to the home position
+     * SLIDER_[LR]O_CMD:   Open the slider to the right position
+     * SLIDER_[LR]C_CMD:   Close the slider to the home position
      *
      * **************************/
+#define SLIDER_LEFT_CMD_MASK        (0x0f)
+#define SLIDER_LEFT_CMD_BIT_SHIFT   (0)
+
+#define SLIDER_RIGHT_CMD_MASK       (0xf0)
+#define SLIDER_RIGHT_CMD_BIT_SHIFT  (4)
     enum SliderStateCMD  {
-        SLIDER_OPEN_CMD,
-        SLIDER_CLOSE_CMD
+        SLIDER_LO_CMD = (1u << SLIDER_LEFT_CMD_BIT_SHIFT),
+        SLIDER_LC_CMD = (0u << SLIDER_LEFT_CMD_BIT_SHIFT),
+        SLIDER_RO_CMD = (1u << SLIDER_RIGHT_CMD_BIT_SHIFT),
+        SLIDER_RC_CMD = (0u << SLIDER_RIGHT_CMD_BIT_SHIFT)
     };
 
     /******Defination of the Arm Mode
@@ -97,19 +115,19 @@ public:
 public:
 
     // The robot state cmd
-    uint16_t m_l_motor1_degree;
-    uint16_t m_l_motor2_degree;
-    uint16_t m_l_catch_level;
-    ArmModeCMD m_l_mode;
-    SliderStateCMD m_l_slider_mode;
+    uint16_t m_r_motor1_degree;
+    uint16_t m_r_motor2_degree;
+    uint16_t m_r_catch_level;
+    uint16_t m_r_mode;
+    uint16_t m_r_slider_mode;
 
     // The robot state current
     // Note :read only
-    uint16_t m_read_l_motor1_degree;
-    uint16_t m_read_l_motor2_degree;
-    uint16_t m_read_l_catch_level;
-    ArmMode m_read_l_mode;
-    SliderState m_read_l_slider_mode;
+    uint16_t m_read_r_motor1_degree;
+    uint16_t m_read_r_motor2_degree;
+    uint16_t m_read_r_catch_level;
+    uint16_t m_read_r_mode;
+    uint16_t m_read_r_slider_mode;
 
 
 };

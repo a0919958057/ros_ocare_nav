@@ -3,7 +3,7 @@
 	<param name="robot_description" command="$(find xacro)/xacro $(find labrob_description)/urdf/ocare_realworld.urdf.xacro" />
     
     <!-- main PC GUI interface handler node -->
-	<node name="ocare_pc_gui" pkg="rqt_gui" type="rqt_gui"  required="true" output="screen" />
+	<!--node name="ocare_pc_gui" pkg="rqt_gui" type="rqt_gui"  required="false" output="screen" /-->
     
     <!-- Joy driver for joy_teleop -->
     <node name="joy_driver" pkg="joy" type="joy_node" required="true" />
