@@ -42,6 +42,7 @@ int  fg_mode(-1);
 /****************    Config   *******************/
 
 #define NO_LINE_THROSHOLD (SENSOR_REG_COUNT * 100 - 100)
+#define SENSOR_BLACK_THROSHOLD  (90)
 #define SIZE_DATA_RECOARD (10)
 #define CONVERG_THROSHOLD (M_PI * 5.0/180.0)
 
@@ -49,18 +50,20 @@ int  fg_mode(-1);
 
 #define TASK_8_LENGTH_FRONT     (0.6)
 #define TASK_10_LENGTH_RIGHT    (0.4)
-#define TASK_13_LENGTH_FRONT    (0.55)
-#define TASK_13_LENGTH_RIGHT    (0.4)
-#define TASK_15_LENGTH_RIGHT    (0.55)
+#define TASK_13_LENGTH_FRONT    (0.6)
+#define TASK_13_LENGTH_RIGHT    (0.47)
+#define TASK_15_LENGTH_RIGHT    (0.5)
 
-#define TASK_200_DURATION       (1.5)
-#define TASK_201_DURATION       (4.0)
-#define TASK_202_DURATION       (1.5)
+#define TASK_210_DURATION       (1.5)
+#define TASK_211_DURATION       (4.0)
+#define TASK_212_DURATION       (1.5)
 
 #define TASK_110_DURATION       (4)
 #define TASK_111_DURATION       (1.5)
 #define TASK_112_DURATION       (5)
 #define TASK_114_DURATION       (1)
+
+#define TASK_15_1_DURATION      (1)
 
 /************************************************/
 
@@ -134,7 +137,7 @@ double cot_angle(double _degree);
 inline float get_laser_distence(float _angle);
 inline float get_right_distence(float _orient_offset);
 inline float get_left_distence(float _orient_offset);
-inline float get_front_distence();
+inline float get_front_distence(float _orient_offset);
 
 class ConvergDetector {
 public:
@@ -606,12 +609,12 @@ int main(int argc, char** argv) {
                         if(stage_change_detect(stage)) stage++;
                         if(stage == 115) stage = 12;
                     }
-                    else if (stage == 20) {
+                    else if (stage == 21) {
                         if(stage_change_detect(stage)) stage = 200;
                     }
-                    else if( stage >= 200 && stage <=202) {
+                    else if( stage >= 210 && stage <=212) {
                         if(stage_change_detect(stage)) stage++;
-                        if(stage == 203) stage = 21;
+                        if(stage == 213) stage = 22;
                     }
                     else {
 
@@ -691,6 +694,7 @@ void loop_tesk(int _stage, ros::Publisher* _diff_pub, ros::Publisher* _diff_twis
     std_msgs::UInt16MultiArray cmd_message;
     // The differential wheel Torque CMD message
     geometry_msgs::Twist cmd_twist;
+    float ref_orient(0);
 
     cmd_message.data.clear();
 
@@ -798,7 +802,14 @@ void loop_tesk(int _stage, ros::Publisher* _diff_pub, ros::Publisher* _diff_twis
         cmd_message.data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
         cmd_message.data.push_back((uint16_t)DiffModbus::WHITE_CMD);
         cmd_twist.linear.x = 50;
-        cmd_twist.angular.z = 0 - (right_length)*cos(orient) + TASK_13_LENGTH_RIGHT  ;
+        ref_orient  = 0 +
+                ORIENT_RIGHT_KP *
+                (TASK_13_LENGTH_RIGHT - get_right_distence(-orient));
+        if(ref_orient > 20.0/180.0 * M_PI)
+            ref_orient = 20.0/180.0 * M_PI;
+        else if(ref_orient < -20.0/180.0 * M_PI)
+            ref_orient = -20.0/180.0 * M_PI;
+        cmd_twist.angular.z = ref_orient;
         break;
     case 14:
         cmd_message.data.push_back((uint16_t)DiffModbus::MODE_CONTROLLABLE_CMD);
@@ -812,8 +823,9 @@ void loop_tesk(int _stage, ros::Publisher* _diff_pub, ros::Publisher* _diff_twis
         cmd_message.data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
         cmd_message.data.push_back((uint16_t)DiffModbus::WHITE_CMD);
         cmd_twist.linear.x = 50;
-        cmd_twist.angular.z = M_PI * 90.0/180.0 -
-                (right_length)*cos(orient - M_PI * 90.0/180.0) + TASK_15_LENGTH_RIGHT;
+        cmd_twist.angular.z = M_PI * 90.0/180.0 +
+                ORIENT_RIGHT_KP *
+                (TASK_15_LENGTH_RIGHT - get_right_distence(cot_angle(M_PI * 90.0/180.0-orient)));
         break;
     case 16:
         cmd_message.data.push_back((uint16_t)DiffModbus::MODE_TRACK_LINE_CMD);
@@ -824,27 +836,34 @@ void loop_tesk(int _stage, ros::Publisher* _diff_pub, ros::Publisher* _diff_twis
         break;
     case 17:
         cmd_message.data.push_back((uint16_t)DiffModbus::MODE_TRACK_LINE_CMD);
-        cmd_message.data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
+        cmd_message.data.push_back((uint16_t)DiffModbus::TORQUE_HIGH_CMD);
         cmd_message.data.push_back((uint16_t)DiffModbus::BLACK_CMD);
         cmd_twist.linear.x = 0;
         cmd_twist.angular.z = 0;
         break;
     case 18:
+        cmd_message.data.push_back((uint16_t)DiffModbus::MODE_TRACK_LINE_CMD);
+        cmd_message.data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
+        cmd_message.data.push_back((uint16_t)DiffModbus::BLACK_CMD);
+        cmd_twist.linear.x = 0;
+        cmd_twist.angular.z = 0;
+        break;
     case 19:
+    case 20:
         cmd_message.data.push_back((uint16_t)DiffModbus::MODE_TRACK_LINE_CMD);
         cmd_message.data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
         cmd_message.data.push_back((uint16_t)DiffModbus::WHITE_CMD);
         cmd_twist.linear.x = 0;
         cmd_twist.angular.z = 0;
         break;
-    case 20:
-    case 200:
-    case 201:
-    case 202:
+    case 21:
+    case 210:
+    case 211:
+    case 212:
 
         do_gohome_tesk(_stage, &cmd_message, &cmd_twist);
         break;
-    case 21:
+    case 22:
         cmd_message.data.push_back((uint16_t)DiffModbus::MODE_STOP_CMD);
         cmd_message.data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
         cmd_message.data.push_back((uint16_t)DiffModbus::WHITE_CMD);
@@ -1081,17 +1100,11 @@ bool stage_change_detect(int _stage) {
         break;
     case 13:
         // Detect the Orient is stable at 0 degree and Distence is less than 0.5 m
-        if(!stable_detector.isStarted()) {
-            stable_detector.init(M_PI * 0.0/180);
-            stable_detector.start();
-        } else {
-            stable_detector.update();
-        }
-        if(front_length < TASK_13_LENGTH_FRONT)
+        if(get_front_distence(-orient) < TASK_13_LENGTH_FRONT)
             laser_distence_overlimit_conter ++;
 
         // If there the distence less than 0.3 m too many times, we have confidence say that we need turning now
-        if(stable_detector.isConverged()  && laser_distence_overlimit_conter > 3 ) {
+        if(laser_distence_overlimit_conter > 3 ) {
             laser_distence_overlimit_conter = 0;
             stable_detector.stop();
             return true;
@@ -1113,7 +1126,20 @@ bool stage_change_detect(int _stage) {
     case 15:
         // Detect any white
         for(int i=0; i<SENSOR_REG_COUNT; i++) {
-            if(sensor_value[i] < 30) return true;
+            if(sensor_value[i] < 30) {
+                if(!fg_usetimer) last_time = ros::Time::now();
+                fg_usetimer = true;
+            }
+
+        }
+        if(fg_usetimer) {
+            if(ros::Time::now().toSec() - last_time.toSec() > TASK_15_1_DURATION) {
+                fg_usetimer = false;
+                last_time = ros::Time::now();
+                return true;
+            }
+        } else {
+            ROS_ERROR("Stage ERROR %d",_stage);
         }
         break;
     case 16:
@@ -1124,13 +1150,18 @@ bool stage_change_detect(int _stage) {
         } else {
             stable_detector.update();
         }
-        if(stable_detector.isConverged() && get_sensor_average() < 30.0) {
+        if(stable_detector.isConverged() && is_sensor_noline()) {
             stable_detector.stop();
             return true;
         }
 
         break;
     case 17:
+        // Detect the orient is cross -135 degree
+        if(fabs(orient - M_PI * -135.0/180.0) < M_PI * 15.0/180.0)
+            return true;
+        break;
+    case 18:
         // Detect the Orient is stable at 180 degree and Average turn to black
         if(!stable_detector.isStarted()) {
             stable_detector.init(M_PI * 180.0/180);
@@ -1144,7 +1175,7 @@ bool stage_change_detect(int _stage) {
         }
 
         break;
-    case 18:
+    case 19:
         // Detect the Orient is stable at -90 degree
         if(!stable_detector.isStarted()) {
             stable_detector.init(M_PI * -90.0/180);
@@ -1157,17 +1188,17 @@ bool stage_change_detect(int _stage) {
             return true;
         }
         break;
-    case 19:
+    case 20:
         // Detect right sensor white
         if(sensor_value[12] < 50 && sensor_value[11] < 50) return true;
         break;
-    case 20:
+    case 21:
         fg_usetimer = true;
         last_time = ros::Time::now();
         return true;
-    case 200:
+    case 210:
         if(fg_usetimer) {
-            if(ros::Time::now().toSec() - last_time.toSec() > TASK_200_DURATION) {
+            if(ros::Time::now().toSec() - last_time.toSec() > TASK_210_DURATION) {
                 last_time = ros::Time::now();
                 return true;
             }
@@ -1175,9 +1206,9 @@ bool stage_change_detect(int _stage) {
             ROS_ERROR("Stage ERROR %d",_stage);
         }
         break;
-    case 201:
+    case 211:
         if(fg_usetimer) {
-            if(ros::Time::now().toSec() - last_time.toSec() > TASK_201_DURATION) {
+            if(ros::Time::now().toSec() - last_time.toSec() > TASK_211_DURATION) {
                 last_time = ros::Time::now();
                 return true;
             }
@@ -1185,9 +1216,9 @@ bool stage_change_detect(int _stage) {
             ROS_ERROR("Stage ERROR %d",_stage);
         }
         break;
-    case 202:
+    case 212:
         if(fg_usetimer) {
-            if(ros::Time::now().toSec() - last_time.toSec() > TASK_202_DURATION) {
+            if(ros::Time::now().toSec() - last_time.toSec() > TASK_212_DURATION) {
                 last_time = ros::Time::now();
                 return true;
             }
@@ -1195,7 +1226,7 @@ bool stage_change_detect(int _stage) {
             ROS_ERROR("Stage ERROR %d",_stage);
         }
         break;
-    case 21:
+    case 22:
         // Stay this stage
         break;
 
@@ -1255,22 +1286,22 @@ void do_button_tesk(int _stage, std_msgs::UInt16MultiArray* _mode_msg, geometry_
 
 void do_gohome_tesk(int _stage, std_msgs::UInt16MultiArray* _mode_msg, geometry_msgs::Twist* _twist_msg) {
     switch(_stage) {
-    case 20:
-    case 200:
+    case 21:
+    case 210:
         _mode_msg->data.push_back((uint16_t)DiffModbus::MODE_CONTROLLABLE_CMD);
         _mode_msg->data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
         _mode_msg->data.push_back((uint16_t)DiffModbus::WHITE_CMD);
         _twist_msg->linear.x = 40;
         _twist_msg->angular.z = M_PI * -90.0/180.0;
         break;
-    case 201:
+    case 211:
         _mode_msg->data.push_back((uint16_t)DiffModbus::MODE_CONTROLLABLE_CMD);
         _mode_msg->data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
         _mode_msg->data.push_back((uint16_t)DiffModbus::WHITE_CMD);
         _twist_msg->linear.x = 0;
         _twist_msg->angular.z = M_PI * 0.0/180.0;
         break;
-    case 202:
+    case 212:
         _mode_msg->data.push_back((uint16_t)DiffModbus::MODE_CONTROLLABLE_CMD);
         _mode_msg->data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
         _mode_msg->data.push_back((uint16_t)DiffModbus::WHITE_CMD);
@@ -1282,13 +1313,19 @@ void do_gohome_tesk(int _stage, std_msgs::UInt16MultiArray* _mode_msg, geometry_
 }
 
 bool is_sensor_noline() {
-    int sum(0);
+    //int sum(0);
+    int count_read_black(0);
     for(int i=0; i<SENSOR_REG_COUNT; i++) {
-            sum += sensor_value[i];
+        //sum += sensor_value[i];
+        if(sensor_value[i] > SENSOR_BLACK_THROSHOLD)
+            count_read_black ++;
     }
     ROS_INFO("SENSOR VALUE[0] = %d", sensor_value);
-    ROS_INFO("NOLINE DEBUG sum = %d", sum);
-    if(sum > NO_LINE_THROSHOLD)
+    //ROS_INFO("NOLINE DEBUG sum = %d", sum);
+    ROS_INFO("NOLINE SENSOR COUNT %d", count_read_black);
+    //if(sum > NO_LINE_THROSHOLD && count_read_black == SENSOR_REG_COUNT)
+    //if(sum > NO_LINE_THROSHOLD)
+    if(count_read_black >= SENSOR_REG_COUNT-1)
         return true;
     else
         return false;
@@ -1332,6 +1369,6 @@ float get_right_distence(float _orient_offset) { return get_laser_distence( -M_P
 
 float get_left_distence(float _orient_offset) { return get_laser_distence( M_PI/2 + _orient_offset); }
 
-float get_front_distence() { return get_laser_distence( 0 ); }
+float get_front_distence(float _orient_offset) { return get_laser_distence( _orient_offset ); }
 
 
