@@ -7,11 +7,11 @@ OcareRobot::OcareRobot() :
     m_arm("Robot right arm",sizeof("Robot right arm")),
     m_diff("Robot wheel",sizeof("Robot wheel")),
     m_arm1_pos(0.0),
-    m_arm2_pos(0.0)
+    m_arm2_pos(-90.0)
     {
 
     memset(pos_r, 0, sizeof(int));
-
+    pos_r[2] = -90.0;
     ROS_INFO("Create HWModuble Object.");
 
     ROS_INFO("Create JointStateHandle...");
@@ -317,11 +317,11 @@ void OcareRobot::read(ros::Time time, ros::Duration period) {
     // Remapping the Arm1 pos
     if(m_arm.m_read_r_motor1_degree > RIGHT_MOTOR1_MAX_VALUE)
 
-        pos_r[1] = -RIGHT_MOTOR1_MAX_DEG * M_PI / 180.0 ;
+        pos_r[1] = -RIGHT_MOTOR1_MAX_VALUE_DEG * M_PI / 180.0 ;
 
     else if(m_arm.m_read_r_motor1_degree < RIGHT_MOTOR1_MIN_VALUE)
 
-        pos_r[1] = -RIGHT_MOTOR1_MIN_DEG * M_PI / 180.0 ;
+        pos_r[1] = -RIGHT_MOTOR1_MIN_VALUE_DEG * M_PI / 180.0 ;
 
     else {
 
@@ -337,11 +337,11 @@ void OcareRobot::read(ros::Time time, ros::Duration period) {
     // Remapping the Arm2 pos
     if(m_arm.m_read_r_motor2_degree > RIGHT_MOTOR2_MAX_VALUE)
 
-        pos_r[2] = -RIGHT_MOTOR2_MAX_DEG * M_PI / 180.0 - 0.5 * M_PI;
+        pos_r[2] = RIGHT_MOTOR2_MAX_VALUE_DEG * M_PI / 180.0 - 0.5 * M_PI;
 
     else if(m_arm.m_read_r_motor2_degree < RIGHT_MOTOR2_MIN_VALUE)
 
-        pos_r[2] = -RIGHT_MOTOR2_MIN_DEG * M_PI / 180.0 - 0.5 * M_PI;
+        pos_r[2] = RIGHT_MOTOR2_MIN_VALUE_DEG * M_PI / 180.0 - 0.5 * M_PI;
 
     else {
 

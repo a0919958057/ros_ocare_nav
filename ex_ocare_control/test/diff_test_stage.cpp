@@ -42,7 +42,7 @@ int  fg_mode(-1);
 /****************    Config   *******************/
 
 #define NO_LINE_THROSHOLD (SENSOR_REG_COUNT * 100 - 100)
-#define SENSOR_BLACK_THROSHOLD  (90)
+#define SENSOR_BLACK_THROSHOLD  (87)
 #define SIZE_DATA_RECOARD (10)
 #define CONVERG_THROSHOLD (M_PI * 5.0/180.0)
 
@@ -54,7 +54,7 @@ int  fg_mode(-1);
 #define TASK_13_LENGTH_RIGHT    (0.47)
 #define TASK_15_LENGTH_RIGHT    (0.5)
 
-#define TASK_210_DURATION       (1.5)
+#define TASK_210_DURATION       (1.8)
 #define TASK_211_DURATION       (4.0)
 #define TASK_212_DURATION       (1.5)
 
@@ -610,7 +610,7 @@ int main(int argc, char** argv) {
                         if(stage == 115) stage = 12;
                     }
                     else if (stage == 21) {
-                        if(stage_change_detect(stage)) stage = 200;
+                        if(stage_change_detect(stage)) stage = 210;
                     }
                     else if( stage >= 210 && stage <=212) {
                         if(stage_change_detect(stage)) stage++;
@@ -717,7 +717,7 @@ void loop_tesk(int _stage, ros::Publisher* _diff_pub, ros::Publisher* _diff_twis
     case 2:
 
         cmd_message.data.push_back((uint16_t)DiffModbus::MODE_TRACK_LINE_CMD);
-        cmd_message.data.push_back((uint16_t)DiffModbus::TORQUE_LOW_CMD);
+        cmd_message.data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
         cmd_message.data.push_back((uint16_t)DiffModbus::WHITE_CMD);
         cmd_twist.linear.x = 0;
         cmd_twist.angular.z = 0;
@@ -823,9 +823,14 @@ void loop_tesk(int _stage, ros::Publisher* _diff_pub, ros::Publisher* _diff_twis
         cmd_message.data.push_back((uint16_t)DiffModbus::TORQUE_MED_CMD);
         cmd_message.data.push_back((uint16_t)DiffModbus::WHITE_CMD);
         cmd_twist.linear.x = 50;
-        cmd_twist.angular.z = M_PI * 90.0/180.0 +
+        ref_orient = M_PI * 90.0/180.0 +
                 ORIENT_RIGHT_KP *
                 (TASK_15_LENGTH_RIGHT - get_right_distence(cot_angle(M_PI * 90.0/180.0-orient)));
+        if(ref_orient > (90.0 + 20.0)/180.0 * M_PI)
+            ref_orient = (90.0 + 20.0)/180.0 * M_PI;
+        else if(ref_orient < (90.0 - 20.0)/180.0 * M_PI)
+            ref_orient = (90.0 - 20.0)/180.0 * M_PI;
+        cmd_twist.angular.z = ref_orient;
         break;
     case 16:
         cmd_message.data.push_back((uint16_t)DiffModbus::MODE_TRACK_LINE_CMD);

@@ -275,6 +275,12 @@ class OcareWidget(QWidget):
         self.audio_rec_start.clicked[bool].connect(self._handle_audio_rec_start)
         self.audio_rec_stop.clicked[bool].connect(self._handle_audio_rec_stop)
 
+        self.capture_image.clicked[bool].connect(self._handle_image_capture)
+        self.sync_image.clicked[bool].connect(self._handle_image_sync)
+        self.alarm_sound.clicked[bool].connect(self._handle_alarm)
+
+
+
     def _setup_graph(self):
         path = os.path.join(self.rp.get_path('rqt_ocare'), 'resource', 'compass.png')
         self.pixmap = QPixmap(path)
@@ -477,6 +483,24 @@ class OcareWidget(QWidget):
         msg = Int32()
         msg.data = value
         self._arm_catch_pub.publish(msg)
+
+    def _handle_image_capture(self):
+        script_path = os.path.join(self.rp.get_path('rqt_ocare'), 'scripts', 'capture_image.py')
+        import subprocess
+        subprocess.Popen(['python', script_path])
+
+    def _handle_image_sync(self):
+        import subprocess
+        subprocess.Popen(['rsync',
+                          '-avzu',
+                          '--progress',
+                          'ubuntu:~/capture_image',
+                          '/home/taiwanet/'])
+
+    def _handle_alarm(self):
+        script_path = os.path.join(self.rp.get_path('rqt_ocare'), 'scripts', 'alarm_sound.py')
+        import subprocess
+        subprocess.Popen(['python', script_path])
 
     def _set_icon_radian(self, radian):
         q = QTransform()
