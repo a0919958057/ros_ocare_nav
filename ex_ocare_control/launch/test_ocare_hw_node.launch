@@ -21,6 +21,12 @@
 		<param name="port" type="string" value="/dev/arduino"/>
 	</node>
 
+    <!-- Joy driver for joy_teleop -->
+    <node name="joy_driver" pkg="joy" type="joy_node" required="true" />
+    
+    <!-- Joy teleop node for publish Twist CMD -->
+    <node name="joy_cmd_publisher" pkg="ex_ocare_control" type="joy_teleop_test.py" required="true" />	
+
 
 	<!-- load the controllers -->
 	<node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false"

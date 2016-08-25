@@ -1,0 +1,20 @@
+<launch>
+    <!-- urdf xml robot description loaded on the Parameter Server-->
+    <param name="robot_description" command="$(find xacro)/xacro $(find labrob_description)/urdf/ocare_realworld.urdf.xacro" />
+    
+    <!-- main PC GUI interface handler node -->
+    <node name="ocare_pc_gui" pkg="rqt_gui" type="rqt_gui"  required="false" output="screen" />
+    
+    <!-- Joy driver for joy_teleop -->
+    <node name="joy_driver" pkg="joy" type="joy_node" required="true" />
+    
+    <!-- Joy teleop node for publish Twist CMD -->
+    <node name="joy_cmd_publisher" pkg="ex_ocare_control" type="joy_teleop_test.py" required="true" />
+    
+    <!-- remote connect node-->
+    <node name="node_manager" pkg="node_manager_fkie" type="node_manager" required="true" />
+    <node name="node_discovery" pkg="master_discovery_fkie" type="master_discovery" required="true"/>
+    <node name="node_syncer" pkg="master_sync_fkie"  type="master_sync" required="true" />
+    
+
+</launch>

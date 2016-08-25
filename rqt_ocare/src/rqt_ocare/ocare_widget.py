@@ -275,9 +275,14 @@ class OcareWidget(QWidget):
         self.audio_rec_start.clicked[bool].connect(self._handle_audio_rec_start)
         self.audio_rec_stop.clicked[bool].connect(self._handle_audio_rec_stop)
 
-        self.capture_image.clicked[bool].connect(self._handle_image_capture)
-        self.sync_image.clicked[bool].connect(self._handle_image_sync)
-        self.alarm_sound.clicked[bool].connect(self._handle_alarm)
+        import platform
+
+        if(platform.machine() == 'x86_64'):
+            # If there is PC
+            self.capture_image.clicked[bool].connect(self._handle_image_capture)
+            self.sync_image.clicked[bool].connect(self._handle_image_sync)
+            self.alarm_sound.clicked[bool].connect(self._handle_alarm)
+
 
 
 

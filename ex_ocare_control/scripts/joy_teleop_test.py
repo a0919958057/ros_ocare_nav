@@ -2,6 +2,7 @@
 import rospy
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Joy
+from std_msgs.msg import String,Int32,UInt16MultiArray,MultiArrayLayout,MultiArrayDimension
 
 import math
 
@@ -15,6 +16,22 @@ orient = 0.0
 # orient_90 = 0.0
 # fg_orient_90 = 0
 # last_orient_90_time = 0.0;
+
+# DiffMode
+MODE_AUTO_START = 1
+MODE_REMOTE_START = 2
+MODE_STOP = -1
+
+diff_mode = -1
+
+def diff_cmd_callback(data):
+    """
+
+    :type data:Int32
+    :return:
+    """
+    global diff_mode
+    diff_mode = data.data
 
 def callback(data):
     """
@@ -65,10 +82,17 @@ def joy_teleop():
     #
     # global last_orient_90_time
 
+    global diff_mode
+
+    global MODE_AUTO_START
+    global MODE_REMOTE_START
+    global MODE_STOP
+
     rospy.init_node('Joy_teleop')
 
     last_orient_90_time = rospy.get_time()
 
+    rospy.Subscriber("diff_mode_controller_cmd", Int32, diff_cmd_callback)
     rospy.Subscriber("joy", Joy, callback)
     global pub
     pub = rospy.Publisher('/ocare/pose_fuzzy_controller/diff_cmd', Twist)
@@ -93,7 +117,8 @@ def joy_teleop():
         twist.linear.x = linear_speed
         # twist.angular.z = orient + angular_offset
         twist.angular.z = orient
-        pub.publish(twist)
+        if(diff_mode == MODE_REMOTE_START):
+            pub.publish(twist)
         r.sleep()
  
     # spin() simply keeps python from exiting until this node is stopped

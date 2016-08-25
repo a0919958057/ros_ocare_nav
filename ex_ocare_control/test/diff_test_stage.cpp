@@ -63,6 +63,7 @@ int  fg_mode(-1);
 #define TASK_112_DURATION       (5)
 #define TASK_114_DURATION       (1)
 
+#define TASK_14_1_DURATION      (1)
 #define TASK_15_1_DURATION      (1)
 
 /************************************************/
@@ -1125,7 +1126,17 @@ bool stage_change_detect(int _stage) {
         }
         if(stable_detector.isConverged()) {
             stable_detector.stop();
-            return true;
+            if(!fg_usetimer) last_time = ros::Time::now();
+            fg_usetimer = true;
+        }
+        if(fg_usetimer) {
+            if(ros::Time::now().toSec() - last_time.toSec() > TASK_14_1_DURATION) {
+                fg_usetimer = false;
+                last_time = ros::Time::now();
+                return true;
+            }
+        } else {
+            ROS_ERROR("Stage ERROR %d",_stage);
         }
         break;
     case 15:
