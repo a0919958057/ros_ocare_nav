@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import rospy
 from geometry_msgs.msg import Twist
-from sensor_msgs.msg import Joy
+from sensor_msgs.msg import Joy, Imu
 from std_msgs.msg import String,Int32,UInt16MultiArray,MultiArrayLayout,MultiArrayDimension
 
 import math
@@ -13,6 +13,7 @@ angular_speed = 0.0
 angular_speed_micro = 0.0
 # angular_offset = 0.0
 orient = 0.0
+current_orient = 0.0
 # orient_90 = 0.0
 # fg_orient_90 = 0
 # last_orient_90_time = 0.0;
@@ -23,6 +24,21 @@ MODE_REMOTE_START = 2
 MODE_STOP = -1
 
 diff_mode = -1
+
+
+def callback_imu(msg):
+    global current_orient
+    import tf
+    """
+    :type msg: Imu
+    """
+
+    (r, p, y) = tf.transformations.euler_from_quaternion( \
+        [msg.orientation.x, msg.orientation.y, msg.orientation.z, \
+         msg.orientation.w])
+
+    current_orient = y
+    # self.update()
 
 def diff_cmd_callback(data):
     """
@@ -53,9 +69,9 @@ def callback(data):
     else:
         linear_speed = data.axes[1] * 100
 
-    if(data.buttons[6] == 1):
+    if(data.buttons[4] == 1):
         angular_speed = data.axes[2] * 0.005
-    elif(data.buttons[7] == 1):
+    elif(data.buttons[5] == 1):
         angular_speed = data.axes[2] * 0.03
     else:
         angular_speed = data.axes[2]*0.01
@@ -76,6 +92,7 @@ def joy_teleop():
     global linear_speed
     # global angular_offset
     global orient
+    global current_orient
 
     # global orient_90
     # global fg_orient_90
@@ -94,6 +111,8 @@ def joy_teleop():
 
     rospy.Subscriber("diff_mode_controller_cmd", Int32, diff_cmd_callback)
     rospy.Subscriber("joy", Joy, callback)
+    rospy.Subscriber('/imu', Imu, callback_imu)
+
     global pub
     pub = rospy.Publisher('/ocare/pose_fuzzy_controller/diff_cmd', Twist)
     r = rospy.Rate(50) # 50hz
@@ -119,6 +138,8 @@ def joy_teleop():
         twist.angular.z = orient
         if(diff_mode == MODE_REMOTE_START):
             pub.publish(twist)
+        else:
+            orient = current_orient
         r.sleep()
  
     # spin() simply keeps python from exiting until this node is stopped

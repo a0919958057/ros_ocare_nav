@@ -189,7 +189,7 @@ class OcareWidget(QWidget):
             'audio/x-raw, format=U16LE, channels=1, rate=44100 ! '
             'audioconvert ! '
             'rtpL16pay ! '
-            'udpsink host=ubuntu port=5000')
+            'udpsink host=ocare port=5000')
 
         self.pipe_audio_pub.set_state(Gst.State.PAUSED)
 
@@ -499,7 +499,7 @@ class OcareWidget(QWidget):
         subprocess.Popen(['rsync',
                           '-avzu',
                           '--progress',
-                          'ubuntu:~/capture_image',
+                          'ocare:~/capture_image',
                           '/home/taiwanet/'])
 
     def _handle_alarm(self):

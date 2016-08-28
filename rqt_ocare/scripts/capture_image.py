@@ -4,7 +4,7 @@ from time import localtime, strftime
 # Create a ssh client
 client = paramiko.SSHClient()
 client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-client.connect('ubuntu', username='taiwanet', password='qwe7891')
+client.connect('ocare', username='taiwanet', password='qwe7891')
 
 file_name = strftime("/home/taiwanet/capture_image/%Y%m%d_%H%M%S.jpg", localtime())
 

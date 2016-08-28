@@ -118,7 +118,7 @@ void OcareRobot::init(ros::NodeHandle* _node) {
     m_track_line_pub = _node->advertise<std_msgs::UInt16MultiArray>("/track_line_sensor", 100);
 
     // Initial the modbus
-    m_modbus.init("/dev/ttyUSB0",115200,2,'N');
+    m_modbus.init("/dev/ftdi232",115200,2,'N');
 
 
     m_modbus.registerHWModule(&m_diff);
